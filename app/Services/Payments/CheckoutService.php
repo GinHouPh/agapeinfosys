@@ -1,0 +1,174 @@
+<?php
+
+namespace App\Services\Payments;
+
+use App\Enums\OrderStatus;
+use App\Enums\SubscriptionStatus;
+use App\Jobs\SendEntitlementWebhook;
+use App\Models\Order;
+use App\Models\PaymentEvent;
+use App\Models\PaymentGateway;
+use App\Models\Product;
+use App\Models\Subscription;
+use App\Services\Payments\Exceptions\GatewayException;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Creates pending checkout orders and completes them exactly once.
+ */
+class CheckoutService
+{
+    public function __construct(private readonly GatewayManager $gateways) {}
+
+    /**
+     * Open a pending order for the plan and start its provider checkout.
+     *
+     * @param  array<string, string|null>  $customer  name, email, phone, subscriber_key, return_url
+     *
+     * @throws GatewayException
+     */
+    public function startCheckout(
+        string $productSlug,
+        string $planCode,
+        array $customer,
+        ?string $gatewayDriver = null,
+    ): array {
+        $order = $this->createPendingOrder($productSlug, $planCode, $customer, $gatewayDriver);
+
+        $driver = $this->gateways->make($order->gateway);
+
+        $session = $driver->createCheckout($order);
+
+        return [$order->fresh(), $session];
+    }
+
+    /**
+     * Create the pending order row without talking to a provider.
+     *
+     * @param  array<string, string|null>  $customer
+     */
+    public function createPendingOrder(
+        string $productSlug,
+        string $planCode,
+        array $customer,
+        ?string $gatewayDriver = null,
+    ): Order {
+        $product = Product::query()
+            ->active()
+            ->where('slug', $productSlug)
+            ->firstOrFail();
+
+        $plan = $product->plans()
+            ->active()
+            ->where('code', $planCode)
+            ->firstOrFail();
+
+        $gateway = $gatewayDriver !== null
+            ? PaymentGateway::query()->where('driver', $gatewayDriver)->first()
+            : $this->gateways->defaultGateway();
+
+        if ($gateway === null || ! $gateway->is_enabled) {
+            throw new GatewayException('No payment gateway is currently available.');
+        }
+
+        if (! $this->gateways->make($gateway)->isConfigured()) {
+            throw new GatewayException('The "'.$gateway->name.'" gateway is not configured yet.');
+        }
+
+        $subscriberKey = (string) ($customer['subscriber_key'] ?? '');
+
+        if ($subscriberKey === '') {
+            $subscriberKey = (string) ($customer['email'] ?? '');
+        }
+
+        if ($subscriberKey === '') {
+            throw new GatewayException('A subscriber key or email is required to checkout.');
+        }
+
+        return Order::create([
+            'product_id' => $product->getKey(),
+            'plan_id' => $plan->getKey(),
+            'payment_gateway_id' => $gateway->getKey(),
+            'subscriber_key' => $subscriberKey,
+            'name' => $customer['name'] ?? null,
+            'email' => $customer['email'] ?? null,
+            'phone' => $customer['phone'] ?? null,
+            'amount' => $plan->price,
+            'currency' => $plan->currency,
+            'status' => OrderStatus::Pending,
+            'expires_at' => now()->addHour(),
+            'meta' => array_filter([
+                'return_url' => $customer['return_url'] ?? null,
+            ]),
+        ]);
+    }
+
+    /**
+     * Mark a pending order paid exactly once and grant the entitlement.
+     *
+     * Idempotent: concurrent webhooks and browser callbacks race on the
+     * pending → paid transition and only one wins.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function complete(Order $order, array $payload = [], string $direction = 'inbound'): bool
+    {
+        return DB::transaction(function () use ($order, $payload, $direction): bool {
+            $event = PaymentEvent::create([
+                'payment_gateway_id' => $order->payment_gateway_id,
+                'order_id' => $order->getKey(),
+                'type' => (string) ($payload['event'] ?? 'payment.completed'),
+                'direction' => $direction,
+                'payload' => $payload,
+                'signature' => isset($payload['signature']) ? (string) $payload['signature'] : null,
+                'is_verified' => true,
+                'is_processed' => false,
+                'received_at' => now(),
+            ]);
+
+            $claimed = $order->claimForCompletion();
+
+            $event->forceFill(['is_processed' => $claimed])->save();
+
+            if (! $claimed) {
+                return false;
+            }
+
+            $order->refresh();
+
+            $this->grantEntitlement($order);
+
+            SendEntitlementWebhook::dispatch($order->getKey())->afterCommit();
+
+            return true;
+        });
+    }
+
+    /**
+     * Extend or create the subscriber's entitlement for this order's plan.
+     */
+    private function grantEntitlement(Order $order): Subscription
+    {
+        $plan = $order->plan()->lockForUpdate()->firstOrFail();
+
+        return Subscription::updateOrCreate(
+            [
+                'product_id' => $order->product_id,
+                'subscriber_key' => $order->subscriber_key,
+            ],
+            [
+                'plan_id' => $plan->getKey(),
+                'last_order_id' => $order->getKey(),
+                'name' => $order->name,
+                'email' => $order->email,
+                'status' => SubscriptionStatus::Active,
+                'starts_at' => $order->paid_at,
+                'ends_at' => $order->paid_at->copy()->addDays($plan->entitlementDays()),
+                'renews_at' => $plan->isRecurring()
+                    ? $order->paid_at->copy()->addDays($plan->entitlementDays())
+                    : null,
+                'cancelled_at' => null,
+            ]
+        );
+    }
+}

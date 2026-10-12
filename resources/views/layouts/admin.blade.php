@@ -34,6 +34,12 @@
                 <p class="px-4 pt-6 pb-2 font-display text-[11px] tracking-[0.24em] text-muted uppercase">Inbox</p>
                 <x-admin-link :href="route('admin.messages.index')" :active="request()->routeIs('admin.messages.*')" label="Messages" />
 
+                <p class="px-4 pt-6 pb-2 font-display text-[11px] tracking-[0.24em] text-muted uppercase">Commerce</p>
+                <x-admin-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')" label="Products" />
+                <x-admin-link :href="route('admin.plans.index')" :active="request()->routeIs('admin.plans.*')" label="Plans" />
+                <x-admin-link :href="route('admin.orders.index')" :active="request()->routeIs('admin.orders.*')" label="Orders" />
+                <x-admin-link :href="route('admin.subscriptions.index')" :active="request()->routeIs('admin.subscriptions.*')" label="Subscriptions" />
+                <x-admin-link :href="route('admin.gateways.index')" :active="request()->routeIs('admin.gateways.*')" label="Gateways" />
             </nav>
 
             <div class="border-t border-line p-4">
