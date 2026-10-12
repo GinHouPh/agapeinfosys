@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AboutController;
+use App\Http\Controllers\Admin\BusinessSettingsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GatewayController as AdminGatewayController;
 use App\Http\Controllers\Admin\LoginController;
@@ -10,8 +11,10 @@ use App\Http\Controllers\Admin\PlanController as AdminPlanController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
+use App\Http\Controllers\Admin\RequirementController as AdminRequirementController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\ShopOrderController as AdminShopOrderController;
+use App\Http\Controllers\Admin\ShowcaseProjectController as AdminShowcaseProjectController;
 use App\Http\Controllers\Admin\SubscriptionController as AdminSubscriptionController;
 use App\Http\Controllers\Admin\TestimonialController as AdminTestimonialController;
 use App\Http\Controllers\CheckoutController;
@@ -19,10 +22,12 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\RequirementController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\Shop\CartController as ShopCartController;
 use App\Http\Controllers\Shop\CheckoutController as ShopCheckoutController;
 use App\Http\Controllers\Shop\ShopController;
+use App\Http\Controllers\ShowcaseController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -33,6 +38,16 @@ Route::get('/services/{service:slug}', [ServiceController::class, 'show'])->name
 
 Route::get('/portfolio', [ProjectController::class, 'index'])->name('portfolio.index');
 Route::get('/portfolio/{project:slug}', [ProjectController::class, 'show'])->name('portfolio.show');
+
+/*
+| Poster wall of ongoing & upcoming projects. Registered before the
+| root-level {product} catch-all so the static paths are never shadowed.
+*/
+Route::get('/projects', [ShowcaseController::class, 'index'])->name('projects.index');
+Route::get('/requirements', [RequirementController::class, 'create'])->name('requirements.create');
+Route::post('/requirements', [RequirementController::class, 'store'])
+    ->middleware('throttle:6,1')
+    ->name('requirements.store');
 
 Route::get('/blog', [PostController::class, 'index'])->name('blog.index');
 Route::get('/blog/{post:slug}', [PostController::class, 'show'])->name('blog.show');
@@ -74,12 +89,21 @@ Route::prefix('admin')->group(function (): void {
 
         Route::resource('services', AdminServiceController::class, ['as' => 'admin'])->except('show');
         Route::resource('projects', AdminProjectController::class, ['as' => 'admin'])->except('show');
+        Route::resource('showcase-projects', AdminShowcaseProjectController::class, ['as' => 'admin'])->except('show');
         Route::resource('posts', AdminPostController::class, ['as' => 'admin'])->except('show');
         Route::resource('testimonials', AdminTestimonialController::class, ['as' => 'admin'])->except('show');
 
         Route::get('messages', [MessageController::class, 'index'])->name('admin.messages.index');
         Route::get('messages/{message}', [MessageController::class, 'show'])->name('admin.messages.show');
         Route::delete('messages/{message}', [MessageController::class, 'destroy'])->name('admin.messages.destroy');
+
+        Route::get('requirements', [AdminRequirementController::class, 'index'])->name('admin.requirements.index');
+        Route::get('requirements/{requirement}', [AdminRequirementController::class, 'show'])->name('admin.requirements.show');
+        Route::patch('requirements/{requirement}/status', [AdminRequirementController::class, 'status'])->name('admin.requirements.status');
+        Route::delete('requirements/{requirement}', [AdminRequirementController::class, 'destroy'])->name('admin.requirements.destroy');
+
+        Route::get('business', [BusinessSettingsController::class, 'edit'])->name('admin.business.edit');
+        Route::put('business', [BusinessSettingsController::class, 'update'])->name('admin.business.update');
 
         /*
         | Digital products, plans, gateways, orders & subscriptions

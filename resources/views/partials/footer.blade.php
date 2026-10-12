@@ -3,6 +3,10 @@
     $mailing = \App\Models\Setting::value('mailing_address', 'PO Box 4021, Knowledge City,\nBengaluru, Karnataka 560001');
     $email = \App\Models\Setting::value('contact_email', 'hello@agapeinfosys.com');
     $phone = \App\Models\Setting::value('contact_phone', '+91 00000 00000');
+
+    $business = \App\Models\Setting::structured('business', []);
+    $brand = $business['brand_name'] ?? 'Agape Infosys';
+    $socials = array_filter($business['socials'] ?? []);
 @endphp
 
 <footer class="border-t border-line bg-ink">
@@ -13,8 +17,10 @@
                 <li><a href="{{ route('home') }}" class="hover:text-accent">Home</a></li>
                 <li><a href="{{ route('about') }}" class="hover:text-accent">About Us</a></li>
                 <li><a href="{{ route('services.index') }}" class="hover:text-accent">Services</a></li>
+                <li><a href="{{ route('projects.index') }}" class="hover:text-accent">Projects</a></li>
                 <li><a href="{{ route('portfolio.index') }}" class="hover:text-accent">Case Studies</a></li>
                 <li><a href="{{ route('blog.index') }}" class="hover:text-accent">Blog</a></li>
+                <li><a href="{{ route('requirements.create') }}" class="hover:text-accent">Requirement Brief</a></li>
             </ul>
         </div>
 
@@ -45,19 +51,21 @@
                 </li>
             </ul>
 
-            <div class="mt-6 flex gap-3">
-                @foreach (['Facebook' => 'https://www.facebook.com/', 'LinkedIn' => 'https://www.linkedin.com/', 'Instagram' => 'https://www.instagram.com/'] as $network => $url)
-                    <a
-                        href="{{ $url }}"
-                        rel="noopener noreferrer"
-                        target="_blank"
-                        class="grid h-10 w-10 place-items-center border border-line text-xs tracking-widest text-muted uppercase transition-colors duration-300 hover:border-accent hover:text-accent"
-                        aria-label="{{ $network }}"
-                    >
-                        {{ strtoupper(substr($network, 0, 2)) }}
-                    </a>
-                @endforeach
-            </div>
+            @if ($socials !== [])
+                <div class="mt-6 flex gap-3">
+                    @foreach ($socials as $network => $url)
+                        <a
+                            href="{{ $url }}"
+                            rel="noopener noreferrer"
+                            target="_blank"
+                            class="grid h-10 w-10 place-items-center border border-line text-xs tracking-widest text-muted uppercase transition-colors duration-300 hover:border-accent hover:text-accent"
+                            aria-label="{{ ucfirst($network) }}"
+                        >
+                            {{ strtoupper(substr($network, 0, 2)) }}
+                        </a>
+                    @endforeach
+                </div>
+            @endif
         </div>
     </div>
 
@@ -70,7 +78,7 @@
             </a>
 
             <p class="text-sm text-muted">
-                &copy; <span data-year>{{ date('Y') }}</span> Agape Infosys. All Rights Reserved.
+                &copy; <span data-year>{{ date('Y') }}</span> {{ $brand }}. All Rights Reserved.
             </p>
 
             <a href="#main" class="font-display text-xs tracking-[0.24em] text-muted uppercase hover:text-accent">

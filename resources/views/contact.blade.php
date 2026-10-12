@@ -75,13 +75,49 @@
                     </li>
                 </ul>
 
+                @php
+                    $business = \App\Models\Setting::structured('business', []);
+                    $supportHours = $business['support_hours'] ?? '';
+                    $disclosures = array_filter([
+                        'Legal entity' => $business['legal_name'] ?? '',
+                        'Registration' => $business['registration_number'] ?? '',
+                        'GSTIN' => $business['tax_number'] ?? '',
+                        'Website' => $business['website'] ?? '',
+                        'Founded' => $business['founded_year'] ?? '',
+                        'Industry' => $business['industry'] ?? '',
+                    ]);
+                @endphp
+
                 <div class="mt-10 border border-line bg-ink p-6">
                     <span class="block font-display text-xs tracking-[0.24em] text-accent uppercase">Working Hours</span>
                     <p class="mt-3 text-body">
-                        Monday – Friday, 9:30 – 18:30 IST.<br>
+                        {{ $supportHours !== '' ? $supportHours : 'Monday – Friday, 9:30 – 18:30 IST.' }}<br>
                         Critical support is staffed around the clock.
                     </p>
                 </div>
+
+                @if ($disclosures !== [])
+                    <div class="mt-10 border border-line bg-ink p-6">
+                        <span class="block font-display text-xs tracking-[0.24em] text-accent uppercase">Business Details</span>
+
+                        <dl class="mt-4 space-y-3 text-sm">
+                            @foreach ($disclosures as $label => $value)
+                                <div class="flex justify-between gap-6">
+                                    <dt class="shrink-0 text-muted">{{ $label }}</dt>
+                                    <dd class="text-right break-all text-white">
+                                        @if ($label === 'Website')
+                                            <a href="{{ $value }}" target="_blank" rel="noopener" class="hover:text-accent">
+                                                {{ parse_url($value, PHP_URL_HOST) ?: $value }}
+                                            </a>
+                                        @else
+                                            {{ $value }}
+                                        @endif
+                                    </dd>
+                                </div>
+                            @endforeach
+                        </dl>
+                    </div>
+                @endif
             </div>
         </div>
     </section>

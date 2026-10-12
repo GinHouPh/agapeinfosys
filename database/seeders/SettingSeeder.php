@@ -18,6 +18,25 @@ class SettingSeeder extends Seeder
             'office_address' => "Level 4, Tech Park, Innovation Drive\nBengaluru, Karnataka 560103",
             'mailing_address' => "PO Box 4021, Knowledge City\nBengaluru, Karnataka 560001",
 
+            'business' => [
+                'brand_name' => 'Agape Infosys',
+                'legal_name' => 'Agape Infosys Private Limited',
+                'tagline' => 'Software products and engineering services, built to last.',
+                'founded_year' => '2014',
+                'industry' => 'Software Development & Digital Products',
+                'registration_number' => '',
+                'tax_number' => '',
+                'website' => 'https://agapeinfosys.com',
+                'support_hours' => 'Mon – Fri, 9:30 – 18:30 IST',
+                'socials' => [
+                    'linkedin' => 'https://www.linkedin.com/',
+                    'twitter' => '',
+                    'facebook' => 'https://www.facebook.com/',
+                    'instagram' => 'https://www.instagram.com/',
+                    'youtube' => '',
+                ],
+            ],
+
             'stats' => [
                 ['value' => 12, 'label' => 'years of Experience'],
                 ['value' => 250, 'label' => 'projects Delivered'],

@@ -4,8 +4,10 @@
         'about' => ['label' => 'About', 'route' => 'about'],
         'services' => ['label' => 'Services', 'route' => 'services.index'],
         'shop' => ['label' => 'Shop', 'route' => 'shop.index'],
+        'projects' => ['label' => 'Projects', 'route' => 'projects.index'],
         'portfolio' => ['label' => 'Portfolio', 'route' => 'portfolio.index'],
         'blog' => ['label' => 'Blog', 'route' => 'blog.index'],
+        'requirements' => ['label' => 'Requirements', 'route' => 'requirements.create'],
         'contact' => ['label' => 'Contact', 'route' => 'contact.create'],
     ];
 @endphp
