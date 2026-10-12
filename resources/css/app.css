@@ -1,0 +1,527 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------
+   Design tokens lifted from the Qreate Digital reference theme.
+   ------------------------------------------------------------------ */
+@theme {
+    --color-ink: #0c0c0c;
+    --color-surface: #141414;
+    --color-box: #2c2c2c;
+    --color-line: #383838;
+    --color-muted: #828282;
+    --color-body: #d8d8d8;
+    --color-headline: #ffffff;
+    --color-accent: #d90429;
+    --color-accent-soft: rgba(217, 4, 41, 0.14);
+
+    --font-display: 'Akshar', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Roboto', ui-sans-serif, system-ui, sans-serif;
+
+    --spacing-section: 144px;
+    --spacing-section-tablet: 72px;
+    --spacing-section-mobile: 56px;
+
+    --container-content: 1300px;
+}
+
+@layer base {
+    :root {
+        --section-y: var(--spacing-section);
+    }
+
+    @media (max-width: 1199.98px) {
+        :root {
+            --section-y: var(--spacing-section-tablet);
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        :root {
+            --section-y: var(--spacing-section-mobile);
+        }
+    }
+
+    html {
+        scroll-behavior: smooth;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        @apply bg-ink font-body text-body antialiased;
+        font-size: 16px;
+        line-height: 1.75;
+        letter-spacing: 0.0625em;
+        overflow-x: hidden;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-display font-normal text-headline;
+        text-transform: capitalize;
+        line-height: 1.3;
+        text-wrap: balance;
+    }
+
+    h1 {
+        font-size: clamp(3rem, 7.6vw, 7.594rem);
+        letter-spacing: 0.08em;
+    }
+
+    h2 {
+        font-size: clamp(2.25rem, 5.063vw, 5.063rem);
+        letter-spacing: 0.02em;
+    }
+
+    h3 {
+        font-size: clamp(1.75rem, 3.375vw, 3.375rem);
+        letter-spacing: 0.08em;
+    }
+
+    h4 {
+        font-size: clamp(1.375rem, 2.25vw, 2.25rem);
+        letter-spacing: 0.08em;
+    }
+
+    h5 {
+        font-size: 1.5rem;
+        letter-spacing: 0.08em;
+    }
+
+    h6 {
+        font-size: 1rem;
+        letter-spacing: 0.08em;
+    }
+
+    p {
+        text-wrap: pretty;
+    }
+
+    a {
+        @apply transition-colors duration-300;
+    }
+
+    img {
+        @apply max-w-full h-auto;
+    }
+
+    ::selection {
+        @apply bg-accent text-white;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 3px;
+    }
+
+    /* Slim dark scrollbar to match the canvas */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-line) var(--color-ink);
+    }
+}
+
+@layer components {
+    /* ------------------------------------------------------------
+       Layout
+       ------------------------------------------------------------ */
+    .shell {
+        @apply mx-auto w-full max-w-content px-5 sm:px-8 lg:px-10;
+    }
+
+    .section {
+        padding-block: var(--section-y);
+        @apply relative;
+    }
+
+    .section--tight {
+        padding-block: calc(var(--section-y) * 0.65);
+    }
+
+    .section--surface {
+        @apply bg-surface;
+    }
+
+    .grid-2 {
+        @apply grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16;
+    }
+
+    /* ------------------------------------------------------------
+       Section headings: marquee word + H2 + subtitle
+       ------------------------------------------------------------ */
+    .section-head {
+        @apply relative mb-14;
+    }
+
+    .section-head--center {
+        @apply text-center;
+    }
+
+    .section-head__title {
+        @apply mb-4;
+    }
+
+    .section-head__title .lead {
+        @apply text-white;
+    }
+
+    .section-head__subtitle {
+        @apply block font-body text-base font-normal text-body;
+        letter-spacing: 0.02em;
+        text-transform: none;
+    }
+
+    .section-head--center .section-head__subtitle {
+        @apply text-muted;
+    }
+
+    /* Decorative oversized word pinned to the section edge */
+    .section-mark {
+        @apply pointer-events-none absolute top-16 -left-4 hidden select-none font-display text-sm tracking-[0.4em] text-line uppercase xl:block;
+        writing-mode: vertical-rl;
+    }
+
+    .section-mark--right {
+        left: auto;
+        right: -4px;
+    }
+
+    .eyebrow {
+        @apply mb-5 inline-flex items-center gap-3 font-display text-xs tracking-[0.34em] text-accent uppercase;
+    }
+
+    .eyebrow::before {
+        content: '';
+        @apply h-px w-10 bg-accent;
+    }
+
+    /* ------------------------------------------------------------
+       Buttons
+       ------------------------------------------------------------ */
+    .btn {
+        @apply inline-flex items-center justify-center gap-3 border-0 font-display text-base font-normal tracking-[0.24em] uppercase transition-all duration-300;
+        padding: 15px 30px;
+        letter-spacing: 0.24em;
+        line-height: 1;
+    }
+
+    .btn--solid {
+        @apply bg-box text-white;
+    }
+
+    .btn--solid:hover {
+        @apply bg-accent text-white;
+    }
+
+    .btn--accent {
+        @apply bg-accent text-white;
+    }
+
+    .btn--accent:hover {
+        @apply bg-white text-ink;
+    }
+
+    .btn--ghost {
+        @apply border border-line bg-transparent text-white;
+    }
+
+    .btn--ghost:hover {
+        @apply border-accent bg-accent text-white;
+    }
+
+    .btn__strip {
+        @apply block h-px w-0 bg-current transition-all duration-500;
+    }
+
+    .btn:hover .btn__strip {
+        width: 100%;
+    }
+
+    /* ------------------------------------------------------------
+       Cards & media
+       ------------------------------------------------------------ */
+    .media {
+        @apply relative overflow-hidden bg-box;
+    }
+
+    .media::after {
+        content: '';
+        @apply pointer-events-none absolute inset-0 bg-linear-to-t from-ink/85 via-ink/10 to-transparent opacity-0 transition-opacity duration-500;
+    }
+
+    .media img {
+        @apply h-full w-full object-cover transition-transform duration-700;
+    }
+
+    .group:hover .media::after,
+    .media:hover::after {
+        @apply opacity-100;
+    }
+
+    .group:hover .media img {
+        transform: scale(1.06);
+    }
+
+    .card {
+        @apply relative flex flex-col;
+    }
+
+    .card__title {
+        @apply transition-colors duration-300;
+    }
+
+    .group:hover .card__title {
+        @apply text-accent;
+    }
+
+    .tag {
+        @apply inline-block border border-line px-3 py-1 font-display text-xs tracking-[0.2em] text-muted uppercase;
+    }
+
+    .rule {
+        @apply h-px w-full bg-line;
+    }
+
+    /* Numbered stat block, mirrors the reference counter widget */
+    .stat {
+        @apply border-b border-line pb-5;
+    }
+
+    .stat__value {
+        @apply block font-display text-headline;
+        font-size: clamp(3rem, 6vw, 7.594rem);
+        line-height: 1;
+        letter-spacing: 0.04em;
+    }
+
+    .stat__label {
+        @apply mt-3 block font-display text-lg tracking-[0.08em] text-body capitalize;
+    }
+
+    /* ------------------------------------------------------------
+       Scrolling marquees
+       ------------------------------------------------------------ */
+    .marquee {
+        @apply overflow-hidden;
+    }
+
+    .marquee__track {
+        @apply flex w-max items-center gap-10 whitespace-nowrap;
+        animation: marquee-scroll 30s linear infinite;
+    }
+
+    .marquee--reverse .marquee__track {
+        animation-direction: reverse;
+    }
+
+    .marquee:hover .marquee__track {
+        animation-play-state: paused;
+    }
+
+    .marquee__item {
+        @apply inline-flex items-center gap-10 font-display text-headline;
+        font-size: clamp(2.5rem, 6vw, 5.5rem);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .marquee__dot {
+        @apply inline-block h-3 w-3 rounded-full bg-accent;
+    }
+
+    @keyframes marquee-scroll {
+        from {
+            transform: translateX(0);
+        }
+        to {
+            transform: translateX(-50%);
+        }
+    }
+
+    .logo-marquee .marquee__track {
+        animation-duration: 38s;
+        gap: 4rem;
+    }
+
+    .logo-marquee .marquee__item {
+        @apply font-body text-xl text-muted;
+        font-size: 1.25rem;
+        letter-spacing: 0.1em;
+    }
+
+    /* ------------------------------------------------------------
+       Forms
+       ------------------------------------------------------------ */
+    .field {
+        @apply flex flex-col gap-2;
+    }
+
+    .field__label {
+        @apply font-display text-xs tracking-[0.24em] text-muted uppercase;
+    }
+
+    .input {
+        @apply w-full border-0 border-b border-line bg-transparent pb-3 font-body text-base text-white transition-colors duration-300 outline-hidden placeholder:text-muted focus:border-accent;
+        letter-spacing: 0.04em;
+    }
+
+    textarea.input {
+        @apply min-h-32 resize-y;
+    }
+
+    .field__error {
+        @apply font-body text-sm text-accent;
+        letter-spacing: 0.02em;
+    }
+
+    .form-status {
+        @apply mb-8 border-l-2 border-accent bg-accent-soft px-5 py-4 font-body text-sm text-body;
+    }
+
+    /* ------------------------------------------------------------
+       Header / navigation
+       ------------------------------------------------------------ */
+    .site-header {
+        @apply fixed inset-x-0 top-0 z-50 h-20 transition-all duration-300;
+    }
+
+    .site-header.is-stuck {
+        @apply bg-ink/95 shadow-[0_1px_0_0_var(--color-line)] backdrop-blur;
+    }
+
+    .nav-link {
+        @apply relative font-body text-base font-normal text-white transition-colors duration-300;
+        letter-spacing: 0.02em;
+        text-transform: capitalize;
+    }
+
+    .nav-link::after {
+        content: '';
+        @apply absolute -bottom-1 left-0 h-px w-0 bg-accent transition-all duration-300;
+    }
+
+    .nav-link:hover,
+    .nav-link.is-active {
+        @apply text-accent;
+    }
+
+    .nav-link:hover::after,
+    .nav-link.is-active::after {
+        @apply w-full;
+    }
+
+    /* ------------------------------------------------------------
+       Testimonials
+       ------------------------------------------------------------ */
+    .quote-card {
+        @apply relative flex h-full flex-col gap-6 border border-line bg-ink p-8 transition-colors duration-300;
+    }
+
+    .quote-card:hover {
+        @apply border-accent;
+    }
+
+    .quote-card__mark {
+        @apply absolute -top-5 left-8 font-display text-6xl leading-none text-accent;
+    }
+
+    /* ------------------------------------------------------------
+       Admin
+       ------------------------------------------------------------ */
+    .admin-shell {
+        @apply min-h-screen bg-surface text-body;
+    }
+
+    .admin-card {
+        @apply border border-line bg-ink p-6;
+    }
+
+    .admin-table {
+        @apply w-full border-collapse text-left text-sm;
+    }
+
+    .admin-table th {
+        @apply border-b border-line px-4 py-3 font-display text-xs tracking-[0.2em] text-muted uppercase;
+    }
+
+    .admin-table td {
+        @apply border-b border-line/60 px-4 py-3 align-middle;
+    }
+
+    .admin-table tbody tr:hover {
+        @apply bg-ink/60;
+    }
+
+    .badge {
+        @apply inline-block px-2 py-1 font-display text-xs tracking-[0.14em] uppercase;
+    }
+
+    .badge--on {
+        @apply bg-accent-soft text-accent;
+    }
+
+    .badge--off {
+        @apply bg-box text-muted;
+    }
+
+    .admin-nav-link {
+        @apply flex items-center gap-3 px-4 py-3 font-body text-sm text-body transition-colors duration-200;
+    }
+
+    .admin-nav-link:hover {
+        @apply bg-ink text-white;
+    }
+
+    .admin-nav-link.is-active {
+        @apply border-l-2 border-accent bg-ink text-white;
+    }
+}
+
+/* Prose styling for long-form article and case study bodies */
+.prose-dark {
+    @apply space-y-6 text-base leading-relaxed text-body;
+}
+
+.prose-dark h2 {
+    @apply pt-6 text-3xl;
+}
+
+.prose-dark h3 {
+    @apply pt-4 text-2xl;
+}
+
+.prose-dark a {
+    @apply text-accent underline underline-offset-4;
+}
+
+.prose-dark ul {
+    @apply list-disc space-y-2 pl-6;
+}
+
+.prose-dark ol {
+    @apply list-decimal space-y-2 pl-6;
+}
+
+.prose-dark blockquote {
+    @apply border-l-2 border-accent pl-6 italic text-muted;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .marquee__track {
+        animation: none;
+    }
+
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
