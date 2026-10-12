@@ -133,15 +133,15 @@ class AdminCommerceTest extends TestCase
 
     public function test_gateway_can_be_configured_and_enabled(): void
     {
-        $gateway = PaymentGateway::factory()->create(['driver' => 'razorpay', 'is_enabled' => false]);
+        $gateway = PaymentGateway::factory()->create(['driver' => 'cashfree', 'is_enabled' => false]);
 
         $this->actingAs($this->admin())
             ->put(route('admin.gateways.update', $gateway), [
                 'mode' => 'test',
                 'is_enabled' => 1,
                 'is_default' => 1,
-                'key_id' => 'rzp_test_123',
-                'key_secret' => 'secret123',
+                'client_id' => 'cf_test_123',
+                'client_secret' => 'secret123',
             ])
             ->assertRedirect(route('admin.gateways.index'));
 
@@ -149,31 +149,31 @@ class AdminCommerceTest extends TestCase
 
         $this->assertTrue($gateway->is_enabled);
         $this->assertTrue($gateway->is_default);
-        $this->assertSame('rzp_test_123', $gateway->credentials()['key_id']);
+        $this->assertSame('cf_test_123', $gateway->credentials()['client_id']);
     }
 
     public function test_blank_gateway_fields_keep_stored_credentials(): void
     {
-        $gateway = PaymentGateway::factory()->configured(['key_id' => 'rzp_test_old', 'key_secret' => 'oldsecret'])->create();
+        $gateway = PaymentGateway::factory()->configured(['client_id' => 'cf_test_old', 'client_secret' => 'oldsecret'])->create();
 
         $this->actingAs($this->admin())
             ->put(route('admin.gateways.update', $gateway), [
                 'mode' => 'test',
                 'is_enabled' => 1,
                 'is_default' => 0,
-                'key_id' => '',
-                'key_secret' => '',
+                'client_id' => '',
+                'client_secret' => '',
             ]);
 
         $credentials = $gateway->refresh()->credentials();
 
-        $this->assertSame('rzp_test_old', $credentials['key_id']);
-        $this->assertSame('oldsecret', $credentials['key_secret']);
+        $this->assertSame('cf_test_old', $credentials['client_id']);
+        $this->assertSame('oldsecret', $credentials['client_secret']);
     }
 
     public function test_setting_a_default_gateway_clears_the_others(): void
     {
-        $first = PaymentGateway::factory()->create(['driver' => 'razorpay', 'is_default' => true]);
+        $first = PaymentGateway::factory()->create(['driver' => 'phonepe', 'is_default' => true]);
         $second = PaymentGateway::factory()->create(['driver' => 'payu']);
 
         $this->actingAs($this->admin())
@@ -231,10 +231,10 @@ class AdminCommerceTest extends TestCase
         $this->actingAs($this->admin())
             ->get('/admin/gateways')
             ->assertOk()
-            ->assertSee('Razorpay')
-            ->assertSee('Phonepe')
             ->assertSee('Cashfree')
+            ->assertSee('Phonepe')
             ->assertSee('Payu')
-            ->assertSee('Paypal');
+            ->assertSee('Paypal')
+            ->assertSee('Sandbox');
     }
 }

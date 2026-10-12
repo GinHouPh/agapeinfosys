@@ -152,7 +152,7 @@ class CheckoutController extends Controller
     /**
      * Best-effort completion when a hosted gateway sends the customer back.
      *
-     * Drivers that can verify locally (Razorpay HMAC, PayU hash, PayPal
+     * Drivers that can verify locally (PayU hash, PayPal
      * capture, sandbox token) do so in verifyCallback; hosted-redirect
      * drivers additionally confirm against the provider status API. Any
      * failure simply leaves the order pending — the provider webhook is the

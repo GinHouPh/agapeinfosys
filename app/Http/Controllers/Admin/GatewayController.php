@@ -97,11 +97,6 @@ class GatewayController extends Controller
     private function credentialFields(string $driver): array
     {
         return match ($driver) {
-            'razorpay' => [
-                'key_id' => 'Key ID',
-                'key_secret' => 'Key Secret',
-                'webhook_secret' => 'Webhook Secret',
-            ],
             'phonepe' => [
                 'merchant_id' => 'Merchant ID',
                 'salt' => 'Salt',

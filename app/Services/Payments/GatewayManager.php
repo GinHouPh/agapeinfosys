@@ -8,7 +8,6 @@ use App\Services\Payments\Drivers\CashfreeDriver;
 use App\Services\Payments\Drivers\PayPalDriver;
 use App\Services\Payments\Drivers\PayUDriver;
 use App\Services\Payments\Drivers\PhonePeDriver;
-use App\Services\Payments\Drivers\RazorpayDriver;
 use App\Services\Payments\Drivers\SandboxDriver;
 use App\Services\Payments\Exceptions\GatewayException;
 use InvalidArgumentException;
@@ -24,9 +23,8 @@ class GatewayManager
      * @var array<string, class-string<PaymentGatewayDriver>>
      */
     public const DRIVERS = [
-        'razorpay' => RazorpayDriver::class,
-        'phonepe' => PhonePeDriver::class,
         'cashfree' => CashfreeDriver::class,
+        'phonepe' => PhonePeDriver::class,
         'payu' => PayUDriver::class,
         'paypal' => PayPalDriver::class,
         'sandbox' => SandboxDriver::class,
@@ -40,9 +38,8 @@ class GatewayManager
     public static function descriptions(): array
     {
         return [
-            'razorpay' => 'Cards, UPI, netbanking & wallets — India',
-            'phonepe' => 'PhonePe PG — UPI & cards, India',
             'cashfree' => 'Cashfree PG — UPI, cards, wallets, India',
+            'phonepe' => 'PhonePe PG — UPI & cards, India',
             'payu' => 'PayU — cards, netbanking, EMI, India',
             'paypal' => 'PayPal — international cards & wallets',
             'sandbox' => 'Built-in simulator for local testing',

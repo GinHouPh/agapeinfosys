@@ -81,9 +81,8 @@ class CommerceSeeder extends Seeder
         }
 
         $gateways = [
-            ['driver' => 'razorpay', 'name' => 'Razorpay'],
-            ['driver' => 'phonepe', 'name' => 'PhonePe'],
             ['driver' => 'cashfree', 'name' => 'Cashfree'],
+            ['driver' => 'phonepe', 'name' => 'PhonePe'],
             ['driver' => 'payu', 'name' => 'PayU'],
             ['driver' => 'paypal', 'name' => 'PayPal'],
             ['driver' => 'sandbox', 'name' => 'Sandbox (simulator)'],

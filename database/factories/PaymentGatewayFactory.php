@@ -18,8 +18,8 @@ class PaymentGatewayFactory extends Factory
     public function definition(): array
     {
         return [
-            'driver' => 'razorpay',
-            'name' => 'Razorpay',
+            'driver' => 'cashfree',
+            'name' => 'Cashfree',
             'is_enabled' => false,
             'is_default' => false,
             'mode' => 'test',

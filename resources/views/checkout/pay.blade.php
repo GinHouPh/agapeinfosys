@@ -62,7 +62,7 @@
                         </button>
                     </form>
                 @elseif ($payload !== [])
-                    {{-- Inline provider SDK (Razorpay) --}}
+                    {{-- Inline provider SDK (Cashfree) --}}
                     <button type="button" id="inline-checkout" class="btn btn--accent w-full justify-center">
                         Pay {{ $order->formattedAmount() }}
                         <span class="btn__strip" aria-hidden="true"></span>
@@ -90,41 +90,26 @@
 @endpush
 
 @push('scripts')
-    @if ($payload !== [] && $order->gateway?->driver === 'razorpay')
+    @if ($payload !== [] && $order->gateway?->driver === 'cashfree')
         <script>
             (function () {
-                var options = @json($payload);
+                var payload = @json($payload);
 
-                options.handler = function (response) {
-                    var form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = @json(route('checkout.result', [$order->product, $order]));
+                // Cashfree checkout opens on the hosted payment page and
+                // returns the customer to the order result URL.
+                var cashfree = Cashfree({ mode: payload.mode });
 
-                    function addField(name, value) {
-                        var input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = name;
-                        input.value = value;
-                        form.appendChild(input);
-                    }
+                function openCheckout() {
+                    cashfree.checkout({
+                        paymentSessionId: payload.payment_session_id,
+                        redirectTarget: '_self',
+                    });
+                }
 
-                    addField('_token', @json(csrf_token()));
-                    addField('razorpay_payment_id', response.razorpay_payment_id);
-                    addField('razorpay_order_id', response.razorpay_order_id);
-                    addField('razorpay_signature', response.razorpay_signature);
-
-                    document.body.appendChild(form);
-                    form.submit();
-                };
-
-                var checkout = new Razorpay(options);
-
-                document.getElementById('inline-checkout').addEventListener('click', function () {
-                    checkout.open();
-                });
+                document.getElementById('inline-checkout').addEventListener('click', openCheckout);
 
                 // Auto-open for a smoother flow.
-                checkout.open();
+                openCheckout();
             })();
         </script>
     @endif

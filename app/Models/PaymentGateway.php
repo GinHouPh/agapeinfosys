@@ -74,8 +74,8 @@ class PaymentGateway extends Model
      */
     public function checkoutScript(): ?string
     {
-        return $this->driver === 'razorpay'
-            ? 'https://checkout.razorpay.com/v1/checkout.js'
+        return $this->driver === 'cashfree'
+            ? 'https://sdk.cashfree.com/js/v3/cashfree.js'
             : null;
     }
 }

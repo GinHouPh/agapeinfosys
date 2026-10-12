@@ -54,7 +54,7 @@ class PaymentWebhookController extends Controller
             'driver' => $driver,
             'signature_valid' => $signatureValid,
             'reference' => $order->reference,
-            'signature' => $request->header('X-Razorpay-Signature') ?? $request->header('X-Signature'),
+            'signature' => $request->header('x-webhook-signature') ?? $request->header('X-Signature'),
         ], 'inbound');
 
         return response('ok', 200);
@@ -70,11 +70,6 @@ class PaymentWebhookController extends Controller
         $payload = $request->json()->all();
 
         return match ($driver) {
-            'razorpay' => [
-                data_get($payload, 'payload.payment.entity.order_id')
-                    ?? data_get($payload, 'payload.order.entity.id'),
-                (string) ($payload['event'] ?? 'razorpay.event'),
-            ],
             'phonepe' => [
                 data_get($payload, 'data.merchantOrderId') ?? data_get($payload, 'merchantOrderId'),
                 (string) ($payload['code'] ?? 'phonepe.event'),

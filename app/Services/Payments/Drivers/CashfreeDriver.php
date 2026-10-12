@@ -10,21 +10,27 @@ use App\Services\Payments\Exceptions\GatewayException;
 use App\Services\Payments\Exceptions\GatewayNotConfiguredException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Ramsey\Uuid\Uuid;
 
 /**
- * Cashfree PG — hosted checkout via payment links.
+ * Cashfree PG — hosted checkout opened through the Cashfree JS SDK.
  *
- * Config-ready: add client_id + client_secret in the admin panel to activate.
- * Webhooks are signed with HMAC-SHA256 over "timestamp.rawBody" and every
- * completion is confirmed against the Cashfree order status API.
+ * Cashfree no longer issues payment links; the create-order API returns a
+ * payment_session_id that the browser SDK turns into the hosted checkout
+ * page (redirectTarget "_self"). Webhooks are signed with
+ * base64(HMAC-SHA256(secret, timestamp.rawBody)) and every completion is
+ * confirmed against the Cashfree order status API.
+ *
+ * @see https://www.cashfree.com/docs/payments/online/web/redirect
+ * @see https://www.cashfree.com/docs/payments/online/webhooks/signature-verification
  */
 class CashfreeDriver implements PaymentGatewayDriver
 {
-    private const SANDBOX_BASE = 'https://api-sandbox.cashfree.com/pg';
+    private const SANDBOX_BASE = 'https://sandbox.cashfree.com/pg';
 
     private const LIVE_BASE = 'https://api.cashfree.com/pg';
 
-    private const API_VERSION = '2023-08-01';
+    private const API_VERSION = '2026-01-01';
 
     public function __construct(private readonly PaymentGateway $gateway) {}
 
@@ -41,7 +47,7 @@ class CashfreeDriver implements PaymentGatewayDriver
     }
 
     /**
-     * Create a Cashfree order and return its hosted payment link.
+     * Create the Cashfree order and hand the browser SDK its session id.
      */
     public function createCheckout(Order $order): CheckoutSession
     {
@@ -51,21 +57,21 @@ class CashfreeDriver implements PaymentGatewayDriver
             'x-client-id' => $credentials['client_id'],
             'x-client-secret' => $credentials['client_secret'],
             'x-api-version' => self::API_VERSION,
+            // Deterministic per order, so retried checkouts stay idempotent.
+            'x-idempotency-key' => (string) Uuid::uuid5(Uuid::NAMESPACE_URL, 'agape.checkout.'.$order->reference),
         ])
             ->connectTimeout(5)
             ->timeout(20)
             ->acceptJson()
             ->post($this->base().'/orders', [
                 'order_id' => $order->reference,
-                'order_amount' => number_format($order->amount / 100, 2, '.', ''),
+                'order_amount' => round($order->amount / 100, 2),
                 'order_currency' => $order->currency,
-                'customer_details' => [[
-                    'customer_id' => substr($order->subscriber_key, 0, 60),
-                    'customer_email' => $order->email ?? 'no-reply@example.com',
-                    'customer_phone' => $order->phone ?? '9999999999',
-                ]],
-                'return_url' => route('checkout.result', [$order->product, $order]),
-                'notify_url' => route('checkout.webhook', 'cashfree'),
+                'customer_details' => $this->customerDetails($order),
+                'order_meta' => [
+                    'return_url' => route('checkout.result', [$order->product, $order]),
+                    'notify_url' => route('checkout.webhook', 'cashfree'),
+                ],
             ]);
 
         if ($response->failed()) {
@@ -74,15 +80,18 @@ class CashfreeDriver implements PaymentGatewayDriver
             );
         }
 
-        $paymentLink = $response->json('payment_link');
+        $session = $response->json('payment_session_id');
 
-        if (! is_string($paymentLink) || $paymentLink === '') {
-            throw new GatewayException('Cashfree did not return a payment link.');
+        if (! is_string($session) || $session === '') {
+            throw new GatewayException('Cashfree did not return a payment session id.');
         }
 
         $order->forceFill(['gateway_order_id' => (string) $response->json('cf_order_id')])->save();
 
-        return CheckoutSession::redirect('cashfree', $paymentLink);
+        return CheckoutSession::inline('cashfree', [
+            'payment_session_id' => $session,
+            'mode' => $this->gateway->isLive() ? 'production' : 'sandbox',
+        ]);
     }
 
     /**
@@ -109,7 +118,8 @@ class CashfreeDriver implements PaymentGatewayDriver
     }
 
     /**
-     * Cashfree signs "timestamp.rawBody" with the client secret.
+     * Cashfree signs "timestamp.rawBody" with the client secret and
+     * base64-encodes the digest.
      */
     public function verifyWebhookSignature(Request $request): bool
     {
@@ -122,7 +132,9 @@ class CashfreeDriver implements PaymentGatewayDriver
             return false;
         }
 
-        $expected = hash_hmac('sha256', $timestamp.'.'.$request->getContent(), $secret);
+        $expected = base64_encode(
+            hash_hmac('sha256', $timestamp.$request->getContent(), $secret, true)
+        );
 
         return hash_equals($expected, $signature);
     }
@@ -147,6 +159,7 @@ class CashfreeDriver implements PaymentGatewayDriver
         ])
             ->connectTimeout(5)
             ->timeout(15)
+            ->acceptJson()
             ->get($this->base().'/orders/'.$order->reference);
 
         if ($response->failed()) {
@@ -167,7 +180,41 @@ class CashfreeDriver implements PaymentGatewayDriver
     }
 
     /**
+     * Customer fields shaped to Cashfree's schema: alphanumeric id, name
+     * and email at most 100 chars, phone exactly 10 digits.
+     *
+     * @return array<string, string>
+     */
+    private function customerDetails(Order $order): array
+    {
+        $customer = strtoupper(
+            preg_replace('/[^A-Za-z0-9]/', '', (string) ($order->subscriber_key ?: $order->reference)) ?? ''
+        );
+
+        if (strlen($customer) < 3) {
+            $customer = 'CUST'.strtoupper(
+                preg_replace('/[^A-Za-z0-9]/', '', $order->reference) ?? ''
+            );
+        }
+
+        $name = trim((string) $order->name);
+
+        $digits = preg_replace('/\D/', '', (string) $order->phone) ?? '';
+
+        return array_filter([
+            'customer_id' => substr($customer, 0, 50),
+            // The API rejects names shorter than three characters, so very
+            // short names are simply omitted (the field is optional).
+            'customer_name' => mb_strlen($name) >= 3 ? mb_substr($name, 0, 100) : null,
+            'customer_email' => $order->email ?: 'no-reply@example.com',
+            'customer_phone' => strlen($digits) >= 10 ? substr($digits, -10) : '9999999999',
+        ]);
+    }
+
+    /**
      * @return array<string, mixed>
+     *
+     * @throws GatewayNotConfiguredException
      */
     private function requireCredentials(): array
     {
