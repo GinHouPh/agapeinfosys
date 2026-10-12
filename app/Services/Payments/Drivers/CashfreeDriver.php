@@ -2,8 +2,8 @@
 
 namespace App\Services\Payments\Drivers;
 
-use App\Models\Order;
 use App\Models\PaymentGateway;
+use App\Services\Payments\Contracts\Payable;
 use App\Services\Payments\Contracts\PaymentGatewayDriver;
 use App\Services\Payments\DTOs\CheckoutSession;
 use App\Services\Payments\Exceptions\GatewayException;
@@ -49,7 +49,7 @@ class CashfreeDriver implements PaymentGatewayDriver
     /**
      * Create the Cashfree order and hand the browser SDK its session id.
      */
-    public function createCheckout(Order $order): CheckoutSession
+    public function createCheckout(Payable $payable): CheckoutSession
     {
         $credentials = $this->requireCredentials();
 
@@ -58,18 +58,18 @@ class CashfreeDriver implements PaymentGatewayDriver
             'x-client-secret' => $credentials['client_secret'],
             'x-api-version' => self::API_VERSION,
             // Deterministic per order, so retried checkouts stay idempotent.
-            'x-idempotency-key' => (string) Uuid::uuid5(Uuid::NAMESPACE_URL, 'agape.checkout.'.$order->reference),
+            'x-idempotency-key' => (string) Uuid::uuid5(Uuid::NAMESPACE_URL, 'agape.checkout.'.$payable->paymentReference()),
         ])
             ->connectTimeout(5)
             ->timeout(20)
             ->acceptJson()
             ->post($this->base().'/orders', [
-                'order_id' => $order->reference,
-                'order_amount' => round($order->amount / 100, 2),
-                'order_currency' => $order->currency,
-                'customer_details' => $this->customerDetails($order),
+                'order_id' => $payable->paymentReference(),
+                'order_amount' => round($payable->paymentAmount() / 100, 2),
+                'order_currency' => $payable->paymentCurrency(),
+                'customer_details' => $this->customerDetails($payable),
                 'order_meta' => [
-                    'return_url' => route('checkout.result', [$order->product, $order]),
+                    'return_url' => $payable->paymentReturnUrl(),
                     'notify_url' => route('checkout.webhook', 'cashfree'),
                 ],
             ]);
@@ -86,7 +86,7 @@ class CashfreeDriver implements PaymentGatewayDriver
             throw new GatewayException('Cashfree did not return a payment session id.');
         }
 
-        $order->forceFill(['gateway_order_id' => (string) $response->json('cf_order_id')])->save();
+        $payable->recordGatewayResult(['gateway_order_id' => (string) $response->json('cf_order_id')]);
 
         return CheckoutSession::inline('cashfree', [
             'payment_session_id' => $session,
@@ -98,23 +98,19 @@ class CashfreeDriver implements PaymentGatewayDriver
      * Hosted return URLs carry no signature, so the status API is the only
      * trustworthy source — confirm here and reject unless fully paid.
      */
-    public function verifyCallback(Order $order, Request $request): void
+    public function verifyCallback(Payable $payable, Request $request): void
     {
         $returnedOrderId = (string) $request->query('order_id', $request->input('order_id', ''));
 
-        if ($returnedOrderId !== '' && $returnedOrderId !== $order->reference) {
+        if ($returnedOrderId !== '' && $returnedOrderId !== $payable->paymentReference()) {
             throw new GatewayException('The Cashfree callback references a different order.');
         }
 
-        if ($this->confirm($order) !== true) {
+        if ($this->confirm($payable) !== true) {
             throw new GatewayException('Cashfree has not confirmed this payment yet.');
         }
 
-        $order->forceFill([
-            'gateway_payload' => array_merge($order->gateway_payload ?? [], [
-                'verified_via' => 'status_api',
-            ]),
-        ])->save();
+        $payable->recordGatewayResult([], ['verified_via' => 'status_api']);
     }
 
     /**
@@ -142,7 +138,7 @@ class CashfreeDriver implements PaymentGatewayDriver
     /**
      * Ask Cashfree for the authoritative order state.
      */
-    public function confirm(Order $order): ?bool
+    public function confirm(Payable $payable): ?bool
     {
         $credentials = $this->gateway->credentials();
         $clientId = $credentials['client_id'] ?? '';
@@ -160,7 +156,7 @@ class CashfreeDriver implements PaymentGatewayDriver
             ->connectTimeout(5)
             ->timeout(15)
             ->acceptJson()
-            ->get($this->base().'/orders/'.$order->reference);
+            ->get($this->base().'/orders/'.$payable->paymentReference());
 
         if ($response->failed()) {
             return null;
@@ -185,28 +181,28 @@ class CashfreeDriver implements PaymentGatewayDriver
      *
      * @return array<string, string>
      */
-    private function customerDetails(Order $order): array
+    private function customerDetails(Payable $payable): array
     {
         $customer = strtoupper(
-            preg_replace('/[^A-Za-z0-9]/', '', (string) ($order->subscriber_key ?: $order->reference)) ?? ''
+            preg_replace('/[^A-Za-z0-9]/', '', (string) ($payable->paymentSubscriberKey() ?: $payable->paymentReference())) ?? ''
         );
 
         if (strlen($customer) < 3) {
             $customer = 'CUST'.strtoupper(
-                preg_replace('/[^A-Za-z0-9]/', '', $order->reference) ?? ''
+                preg_replace('/[^A-Za-z0-9]/', '', $payable->paymentReference()) ?? ''
             );
         }
 
-        $name = trim((string) $order->name);
+        $name = trim((string) $payable->paymentName());
 
-        $digits = preg_replace('/\D/', '', (string) $order->phone) ?? '';
+        $digits = preg_replace('/\D/', '', (string) $payable->paymentPhone()) ?? '';
 
         return array_filter([
             'customer_id' => substr($customer, 0, 50),
             // The API rejects names shorter than three characters, so very
             // short names are simply omitted (the field is optional).
             'customer_name' => mb_strlen($name) >= 3 ? mb_substr($name, 0, 100) : null,
-            'customer_email' => $order->email ?: 'no-reply@example.com',
+            'customer_email' => $payable->paymentEmail() ?: 'no-reply@example.com',
             'customer_phone' => strlen($digits) >= 10 ? substr($digits, -10) : '9999999999',
         ]);
     }

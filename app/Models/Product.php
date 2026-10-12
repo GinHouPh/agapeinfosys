@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Product extends Model
@@ -100,5 +101,17 @@ class Product extends Model
         ])->save();
 
         return $secret;
+    }
+
+    /**
+     * Public URL of the shop image, when one has been uploaded.
+     */
+    public function imageUrl(): ?string
+    {
+        if ($this->logo === null || $this->logo === '') {
+            return null;
+        }
+
+        return Storage::url($this->logo);
     }
 }

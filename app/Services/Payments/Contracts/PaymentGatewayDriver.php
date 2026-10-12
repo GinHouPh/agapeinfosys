@@ -2,7 +2,6 @@
 
 namespace App\Services\Payments\Contracts;
 
-use App\Models\Order;
 use App\Services\Payments\DTOs\CheckoutSession;
 use App\Services\Payments\Exceptions\GatewayException;
 use Illuminate\Http\Request;
@@ -26,17 +25,17 @@ interface PaymentGatewayDriver
     public function isConfigured(): bool;
 
     /**
-     * Start a checkout for the order, returning either an inline checkout
+     * Start a checkout for the payable, returning either an inline checkout
      * payload (browser SDK) or a redirect URL to the provider's hosted page.
      */
-    public function createCheckout(Order $order): CheckoutSession;
+    public function createCheckout(Payable $payable): CheckoutSession;
 
     /**
-     * Verify a browser callback for the order.
+     * Verify a browser callback for the payable.
      *
      * @throws GatewayException
      */
-    public function verifyCallback(Order $order, Request $request): void;
+    public function verifyCallback(Payable $payable, Request $request): void;
 
     /**
      * Whether an inbound webhook carries a valid provider signature.
@@ -44,13 +43,13 @@ interface PaymentGatewayDriver
     public function verifyWebhookSignature(Request $request): bool;
 
     /**
-     * Ask the provider directly whether the order has been paid.
+     * Ask the provider directly whether the payable has been paid.
      *
      * Returns true/false when the provider has a status endpoint, or null when
      * it does not — in that case trust falls back to signature-verified
      * callbacks and webhooks alone.
      */
-    public function confirm(Order $order): ?bool;
+    public function confirm(Payable $payable): ?bool;
 
     /**
      * Whether this driver sends the customer to a hosted payment page instead

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\OrderStatus;
 use App\Models\Concerns\FormatsMoney;
+use App\Services\Payments\Contracts\Payable;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
-class Order extends Model
+class Order extends Model implements Payable
 {
     /** @use HasFactory<OrderFactory> */
     use FormatsMoney, HasFactory;
@@ -154,5 +155,97 @@ class Order extends Model
             'paid_at' => $this->paid_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+    }
+
+    /*
+    |----------------------------------------------------------------------
+    | Payable — how the gateway drivers see this order
+    |----------------------------------------------------------------------
+    */
+
+    public function paymentReference(): string
+    {
+        return (string) $this->reference;
+    }
+
+    public function paymentAmount(): int
+    {
+        return $this->amount;
+    }
+
+    public function paymentCurrency(): string
+    {
+        return (string) $this->currency;
+    }
+
+    public function paymentAmountDisplay(): string
+    {
+        return $this->formattedAmount();
+    }
+
+    public function paymentDescription(): string
+    {
+        return (string) ($this->plan?->name ?? 'Plan');
+    }
+
+    public function paymentBrand(): string
+    {
+        return (string) ($this->product?->name ?? config('app.name'));
+    }
+
+    public function paymentReturnUrl(): string
+    {
+        return route('checkout.result', [$this->product, $this]);
+    }
+
+    public function paymentContext(): string
+    {
+        return (string) ($this->product?->slug ?? '');
+    }
+
+    public function paymentSubscriberKey(): ?string
+    {
+        return $this->subscriber_key;
+    }
+
+    public function paymentName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function paymentEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function paymentPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function paymentGatewayPayload(): array
+    {
+        return $this->gateway_payload ?? [];
+    }
+
+    public function gatewayOrderId(): ?string
+    {
+        return $this->gateway_order_id;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @param  array<string, mixed>  $payload
+     */
+    public function recordGatewayResult(array $attributes, array $payload = []): void
+    {
+        if ($payload !== []) {
+            $attributes['gateway_payload'] = array_merge($this->gateway_payload ?? [], $payload);
+        }
+
+        $this->forceFill($attributes)->save();
     }
 }

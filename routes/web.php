@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
+use App\Http\Controllers\Admin\ShopOrderController as AdminShopOrderController;
 use App\Http\Controllers\Admin\SubscriptionController as AdminSubscriptionController;
 use App\Http\Controllers\Admin\TestimonialController as AdminTestimonialController;
 use App\Http\Controllers\CheckoutController;
@@ -19,6 +20,9 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\Shop\CartController as ShopCartController;
+use App\Http\Controllers\Shop\CheckoutController as ShopCheckoutController;
+use App\Http\Controllers\Shop\ShopController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -37,6 +41,27 @@ Route::get('/contact', [ContactController::class, 'create'])->name('contact.crea
 Route::post('/contact', [ContactController::class, 'store'])
     ->middleware('throttle:6,1')
     ->name('contact.store');
+
+/*
+|--------------------------------------------------------------------------
+| Shop — browse the product catalog and check out a cart
+|--------------------------------------------------------------------------
+|
+| Registered before the root-level {product} catch-all below so "/shop"
+| is never swallowed by a product slug.
+|
+*/
+Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
+Route::get('/shop/cart', [ShopCartController::class, 'index'])->name('shop.cart.index');
+Route::post('/shop/cart', [ShopCartController::class, 'store'])->name('shop.cart.store');
+Route::delete('/shop/cart', [ShopCartController::class, 'destroy'])->name('shop.cart.destroy');
+Route::get('/shop/checkout', [ShopCheckoutController::class, 'show'])->name('shop.checkout.show');
+Route::post('/shop/checkout', [ShopCheckoutController::class, 'store'])->name('shop.checkout.store');
+Route::get('/shop/orders/{order:reference}/pay', [ShopCheckoutController::class, 'pay'])
+    ->name('shop.pay');
+Route::match(['get', 'post'], '/shop/orders/{order:reference}', [ShopCheckoutController::class, 'result'])
+    ->name('shop.result');
+Route::get('/shop/{product:slug}', [ShopController::class, 'show'])->name('shop.show');
 
 Route::prefix('admin')->group(function (): void {
     Route::get('/login', [LoginController::class, 'create'])->name('admin.login');
@@ -67,6 +92,8 @@ Route::prefix('admin')->group(function (): void {
         Route::put('gateways/{gateway}', [AdminGatewayController::class, 'update'])->name('admin.gateways.update');
         Route::get('orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
         Route::get('orders/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
+        Route::get('shop-orders', [AdminShopOrderController::class, 'index'])->name('admin.shop-orders.index');
+        Route::get('shop-orders/{order}', [AdminShopOrderController::class, 'show'])->name('admin.shop-orders.show');
         Route::get('subscriptions', [AdminSubscriptionController::class, 'index'])->name('admin.subscriptions.index');
     });
 });

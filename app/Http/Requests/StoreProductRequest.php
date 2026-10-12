@@ -34,6 +34,7 @@ class StoreProductRequest extends FormRequest
             'domain' => ['nullable', 'string', 'max:190'],
             'description' => ['nullable', 'string', 'max:4000'],
             'callback_url' => ['nullable', 'url', 'max:190'],
+            'logo' => ['nullable', 'image', 'max:4096'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active' => ['boolean'],
         ];

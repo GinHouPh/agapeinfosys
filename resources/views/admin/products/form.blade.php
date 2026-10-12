@@ -59,7 +59,7 @@
     </div>
 @endif
 
-<form action="{{ $action }}" method="POST" class="space-y-8">
+<form action="{{ $action }}" method="POST" enctype="multipart/form-data" class="space-y-8">
     @csrf
     @method($method)
 
@@ -75,6 +75,21 @@
                 <label class="field__label" for="slug">Slug</label>
                 <input class="input" type="text" id="slug" name="slug" value="{{ old('slug', $product?->slug) }}" placeholder="tongdon">
                 @error('slug') <span class="field__error">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+        <div class="grid gap-6 sm:grid-cols-2">
+            <div class="field">
+                <label class="field__label" for="logo">Shop image</label>
+                <input class="input" type="file" id="logo" name="logo" accept="image/*">
+                @error('logo') <span class="field__error">{{ $message }}</span> @enderror
+                <span class="mt-1 block text-xs text-muted">Shown on the shop — JPG, PNG or WebP up to 4 MB.</span>
+            </div>
+
+            <div class="field flex items-end pb-2">
+                @if ($product?->imageUrl())
+                    <img src="{{ $product->imageUrl() }}" alt="{{ $product->name }}" class="h-24 w-24 border border-line object-cover">
+                @endif
             </div>
         </div>
 

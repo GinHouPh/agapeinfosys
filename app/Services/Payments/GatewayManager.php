@@ -100,4 +100,28 @@ class GatewayManager
             ->values()
             ->all();
     }
+
+    /**
+     * The gateway a checkout must charge through: the requested driver or
+     * the enabled default — rejecting missing, disabled or unconfigured
+     * records before any order row is written.
+     *
+     * @throws GatewayException
+     */
+    public function resolveCheckoutGateway(?string $driver = null): PaymentGateway
+    {
+        $gateway = $driver !== null
+            ? PaymentGateway::query()->where('driver', $driver)->first()
+            : $this->defaultGateway();
+
+        if ($gateway === null || ! $gateway->is_enabled) {
+            throw new GatewayException('No payment gateway is currently available.');
+        }
+
+        if (! $this->make($gateway)->isConfigured()) {
+            throw new GatewayException('The "'.$gateway->name.'" gateway is not configured yet.');
+        }
+
+        return $gateway;
+    }
 }

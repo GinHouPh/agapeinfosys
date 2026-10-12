@@ -7,7 +7,6 @@ use App\Enums\SubscriptionStatus;
 use App\Jobs\SendEntitlementWebhook;
 use App\Models\Order;
 use App\Models\PaymentEvent;
-use App\Models\PaymentGateway;
 use App\Models\Product;
 use App\Models\Subscription;
 use App\Services\Payments\Exceptions\GatewayException;
@@ -63,27 +62,9 @@ class CheckoutService
             ->where('code', $planCode)
             ->firstOrFail();
 
-        $gateway = $gatewayDriver !== null
-            ? PaymentGateway::query()->where('driver', $gatewayDriver)->first()
-            : $this->gateways->defaultGateway();
+        $gateway = $this->gateways->resolveCheckoutGateway($gatewayDriver);
 
-        if ($gateway === null || ! $gateway->is_enabled) {
-            throw new GatewayException('No payment gateway is currently available.');
-        }
-
-        if (! $this->gateways->make($gateway)->isConfigured()) {
-            throw new GatewayException('The "'.$gateway->name.'" gateway is not configured yet.');
-        }
-
-        $subscriberKey = (string) ($customer['subscriber_key'] ?? '');
-
-        if ($subscriberKey === '') {
-            $subscriberKey = (string) ($customer['email'] ?? '');
-        }
-
-        if ($subscriberKey === '') {
-            throw new GatewayException('A subscriber key or email is required to checkout.');
-        }
+        $subscriberKey = CustomerKey::resolve($customer);
 
         return Order::create([
             'product_id' => $product->getKey(),

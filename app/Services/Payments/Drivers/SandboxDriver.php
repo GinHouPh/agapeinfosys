@@ -2,8 +2,8 @@
 
 namespace App\Services\Payments\Drivers;
 
-use App\Models\Order;
 use App\Models\PaymentGateway;
+use App\Services\Payments\Contracts\Payable;
 use App\Services\Payments\Contracts\PaymentGatewayDriver;
 use App\Services\Payments\DTOs\CheckoutSession;
 use App\Services\Payments\Exceptions\GatewayException;
@@ -30,26 +30,26 @@ class SandboxDriver implements PaymentGatewayDriver
         return true;
     }
 
-    public function createCheckout(Order $order): CheckoutSession
+    public function createCheckout(Payable $payable): CheckoutSession
     {
         return CheckoutSession::inline('sandbox', [
-            'reference' => $order->reference,
-            'amount' => $order->amount,
-            'currency' => $order->currency,
-            'amount_display' => $order->formattedAmount(),
-            'plan' => $order->plan?->name,
-            'token' => $this->tokenFor($order),
+            'reference' => $payable->paymentReference(),
+            'amount' => $payable->paymentAmount(),
+            'currency' => $payable->paymentCurrency(),
+            'amount_display' => $payable->paymentAmountDisplay(),
+            'plan' => $payable->paymentDescription(),
+            'token' => $this->tokenFor($payable),
         ]);
     }
 
     /**
      * Accept a simulated success or failure posted by the payment view.
      */
-    public function verifyCallback(Order $order, Request $request): void
+    public function verifyCallback(Payable $payable, Request $request): void
     {
         $token = (string) $request->input('token', '');
 
-        if (! hash_equals($this->tokenFor($order), $token)) {
+        if (! hash_equals($this->tokenFor($payable), $token)) {
             throw new WebhookVerificationException('The sandbox payment token is not valid.');
         }
 
@@ -57,12 +57,10 @@ class SandboxDriver implements PaymentGatewayDriver
             throw new GatewayException('Sandbox payment was declined.');
         }
 
-        $order->forceFill([
-            'gateway_payment_id' => 'sandbox_'.bin2hex(random_bytes(8)),
-            'gateway_payload' => array_merge($order->gateway_payload ?? [], [
-                'verified_via' => 'sandbox',
-            ]),
-        ])->save();
+        $payable->recordGatewayResult(
+            ['gateway_payment_id' => 'sandbox_'.bin2hex(random_bytes(8))],
+            ['verified_via' => 'sandbox']
+        );
     }
 
     public function verifyWebhookSignature(Request $request): bool
@@ -80,9 +78,9 @@ class SandboxDriver implements PaymentGatewayDriver
     }
 
     /**
-     * The simulator always confirms a pending order as paid.
+     * The simulator always confirms a pending payment as paid.
      */
-    public function confirm(Order $order): ?bool
+    public function confirm(Payable $payable): ?bool
     {
         return true;
     }
@@ -93,11 +91,11 @@ class SandboxDriver implements PaymentGatewayDriver
     }
 
     /**
-     * Tamper-proof token binding the payment view to this order.
+     * Tamper-proof token binding the payment view to this payable.
      */
-    public function tokenFor(Order $order): string
+    public function tokenFor(Payable $payable): string
     {
-        return hash_hmac('sha256', $order->reference.'|'.$order->amount, $this->secret());
+        return hash_hmac('sha256', $payable->paymentReference().'|'.$payable->paymentAmount(), $this->secret());
     }
 
     private function secret(): string

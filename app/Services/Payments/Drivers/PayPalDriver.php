@@ -2,8 +2,8 @@
 
 namespace App\Services\Payments\Drivers;
 
-use App\Models\Order;
 use App\Models\PaymentGateway;
+use App\Services\Payments\Contracts\Payable;
 use App\Services\Payments\Contracts\PaymentGatewayDriver;
 use App\Services\Payments\DTOs\CheckoutSession;
 use App\Services\Payments\Exceptions\GatewayException;
@@ -41,7 +41,7 @@ class PayPalDriver implements PaymentGatewayDriver
     /**
      * Create a PayPal order and return the approval redirect link.
      */
-    public function createCheckout(Order $order): CheckoutSession
+    public function createCheckout(Payable $payable): CheckoutSession
     {
         $token = $this->accessToken();
 
@@ -52,18 +52,18 @@ class PayPalDriver implements PaymentGatewayDriver
             ->post($this->base().'/v2/checkout/orders', [
                 'intent' => 'CAPTURE',
                 'purchase_units' => [[
-                    'reference_id' => $order->reference,
-                    'custom_id' => $order->reference,
-                    'description' => (string) ($order->plan?->name ?? 'Plan'),
+                    'reference_id' => $payable->paymentReference(),
+                    'custom_id' => $payable->paymentReference(),
+                    'description' => $payable->paymentDescription(),
                     'amount' => [
-                        'currency_code' => $order->currency,
-                        'value' => number_format($order->amount / 100, 2, '.', ''),
+                        'currency_code' => $payable->paymentCurrency(),
+                        'value' => number_format($payable->paymentAmount() / 100, 2, '.', ''),
                     ],
                 ]],
                 'application_context' => [
-                    'brand_name' => $order->product?->name ?? config('app.name'),
-                    'return_url' => route('checkout.result', [$order->product, $order]),
-                    'cancel_url' => route('checkout.result', [$order->product, $order]),
+                    'brand_name' => $payable->paymentBrand(),
+                    'return_url' => $payable->paymentReturnUrl(),
+                    'cancel_url' => $payable->paymentReturnUrl(),
                     'user_action' => 'PAY_NOW',
                 ],
             ]);
@@ -81,7 +81,7 @@ class PayPalDriver implements PaymentGatewayDriver
             throw new GatewayException('PayPal did not return an approval link.');
         }
 
-        $order->forceFill(['gateway_order_id' => (string) $response->json('id')])->save();
+        $payable->recordGatewayResult(['gateway_order_id' => (string) $response->json('id')]);
 
         return CheckoutSession::redirect('paypal', $approveUrl);
     }
@@ -89,9 +89,9 @@ class PayPalDriver implements PaymentGatewayDriver
     /**
      * Capture the approved PayPal order; without capture no money moves.
      */
-    public function verifyCallback(Order $order, Request $request): void
+    public function verifyCallback(Payable $payable, Request $request): void
     {
-        if ($order->gateway_order_id === null) {
+        if ($payable->gatewayOrderId() === null) {
             throw new GatewayException('This order was never opened at PayPal.');
         }
 
@@ -99,7 +99,7 @@ class PayPalDriver implements PaymentGatewayDriver
             ->connectTimeout(5)
             ->timeout(20)
             ->acceptJson()
-            ->post($this->base().'/v2/checkout/orders/'.$order->gateway_order_id.'/capture');
+            ->post($this->base().'/v2/checkout/orders/'.$payable->gatewayOrderId().'/capture');
 
         $status = (string) $response->json('status', '');
 
@@ -111,12 +111,10 @@ class PayPalDriver implements PaymentGatewayDriver
 
         $captureId = data_get($response, 'purchase_units.0.payments.captures.0.id');
 
-        $order->forceFill([
-            'gateway_payment_id' => is_string($captureId) ? $captureId : null,
-            'gateway_payload' => array_merge($order->gateway_payload ?? [], [
-                'verified_via' => 'capture',
-            ]),
-        ])->save();
+        $payable->recordGatewayResult(
+            ['gateway_payment_id' => is_string($captureId) ? $captureId : null],
+            ['verified_via' => 'capture']
+        );
     }
 
     /**
@@ -151,9 +149,9 @@ class PayPalDriver implements PaymentGatewayDriver
     /**
      * Read the capture state straight from PayPal.
      */
-    public function confirm(Order $order): ?bool
+    public function confirm(Payable $payable): ?bool
     {
-        if ($order->gateway_order_id === null) {
+        if ($payable->gatewayOrderId() === null) {
             return null;
         }
 
@@ -161,7 +159,7 @@ class PayPalDriver implements PaymentGatewayDriver
             ->connectTimeout(5)
             ->timeout(15)
             ->acceptJson()
-            ->get($this->base().'/v2/checkout/orders/'.$order->gateway_order_id);
+            ->get($this->base().'/v2/checkout/orders/'.$payable->gatewayOrderId());
 
         if ($response->failed()) {
             return null;

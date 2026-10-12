@@ -2,8 +2,8 @@
 
 namespace App\Services\Payments\Drivers;
 
-use App\Models\Order;
 use App\Models\PaymentGateway;
+use App\Services\Payments\Contracts\Payable;
 use App\Services\Payments\Contracts\PaymentGatewayDriver;
 use App\Services\Payments\DTOs\CheckoutSession;
 use App\Services\Payments\Exceptions\GatewayException;
@@ -44,20 +44,20 @@ class PayUDriver implements PaymentGatewayDriver
     /**
      * Build the signed form fields PayU expects.
      */
-    public function createCheckout(Order $order): CheckoutSession
+    public function createCheckout(Payable $payable): CheckoutSession
     {
         $credentials = $this->requireCredentials();
         $key = (string) $credentials['merchant_key'];
         $salt = (string) $credentials['salt'];
 
-        $txnid = $order->reference;
-        $amount = number_format($order->amount / 100, 2, '.', '');
-        $productinfo = (string) ($order->plan?->name ?? 'Plan');
-        $firstname = (string) ($order->name ?? 'Customer');
-        $email = (string) ($order->email ?? 'no-reply@example.com');
+        $txnid = $payable->paymentReference();
+        $amount = number_format($payable->paymentAmount() / 100, 2, '.', '');
+        $productinfo = $payable->paymentDescription();
+        $firstname = (string) ($payable->paymentName() ?? 'Customer');
+        $email = (string) ($payable->paymentEmail() ?? 'no-reply@example.com');
 
-        $udf1 = $order->product?->slug ?? '';
-        $udf2 = $order->subscriber_key;
+        $udf1 = $payable->paymentContext();
+        $udf2 = (string) $payable->paymentSubscriberKey();
 
         $hashString = implode('|', [
             $key, $txnid, $amount, $productinfo, $firstname, $email,
@@ -71,11 +71,11 @@ class PayUDriver implements PaymentGatewayDriver
             'productinfo' => $productinfo,
             'firstname' => $firstname,
             'email' => $email,
-            'phone' => (string) ($order->phone ?? ''),
+            'phone' => (string) ($payable->paymentPhone() ?? ''),
             'udf1' => $udf1,
             'udf2' => $udf2,
-            'surl' => route('checkout.result', [$order->product, $order]),
-            'furl' => route('checkout.result', [$order->product, $order]),
+            'surl' => $payable->paymentReturnUrl(),
+            'furl' => $payable->paymentReturnUrl(),
             'hash' => hash('sha512', $hashString),
         ];
 
@@ -89,12 +89,12 @@ class PayUDriver implements PaymentGatewayDriver
     /**
      * Verify the SHA-512 hash PayU appends to return and webhook payloads.
      */
-    public function verifyCallback(Order $order, Request $request): void
+    public function verifyCallback(Payable $payable, Request $request): void
     {
         $credentials = $this->requireCredentials();
         $salt = (string) $credentials['salt'];
 
-        if ($request->input('txnid') !== $order->reference) {
+        if ($request->input('txnid') !== $payable->paymentReference()) {
             throw new GatewayException('The PayU callback references a different order.');
         }
 
@@ -114,12 +114,10 @@ class PayUDriver implements PaymentGatewayDriver
             throw new GatewayException('PayU reported the payment as "'.$status.'".');
         }
 
-        $order->forceFill([
-            'gateway_payment_id' => (string) $request->input('mihpayid', ''),
-            'gateway_payload' => array_merge($order->gateway_payload ?? [], [
-                'verified_via' => 'return',
-            ]),
-        ])->save();
+        $payable->recordGatewayResult(
+            ['gateway_payment_id' => (string) $request->input('mihpayid', '')],
+            ['verified_via' => 'return']
+        );
     }
 
     public function verifyWebhookSignature(Request $request): bool
@@ -137,7 +135,7 @@ class PayUDriver implements PaymentGatewayDriver
     /**
      * PayU exposes a transaction-status post service for confirmation.
      */
-    public function confirm(Order $order): ?bool
+    public function confirm(Payable $payable): ?bool
     {
         $credentials = $this->gateway->credentials();
         $key = $credentials['merchant_key'] ?? '';
@@ -148,7 +146,7 @@ class PayUDriver implements PaymentGatewayDriver
         }
 
         $command = 'txnStatus';
-        $hash = hash('sha512', $key.'|'.$command.'|'.$order->reference.'|'.$salt);
+        $hash = hash('sha512', $key.'|'.$command.'|'.$payable->paymentReference().'|'.$salt);
 
         $response = Http::connectTimeout(5)
             ->timeout(15)
@@ -156,7 +154,7 @@ class PayUDriver implements PaymentGatewayDriver
             ->post(self::STATUS_ENDPOINT, [
                 'key' => $key,
                 'command' => $command,
-                'var1' => $order->reference,
+                'var1' => $payable->paymentReference(),
                 'hash' => $hash,
             ]);
 

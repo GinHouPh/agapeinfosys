@@ -3,6 +3,7 @@
         'home' => ['label' => 'Home', 'route' => 'home'],
         'about' => ['label' => 'About', 'route' => 'about'],
         'services' => ['label' => 'Services', 'route' => 'services.index'],
+        'shop' => ['label' => 'Shop', 'route' => 'shop.index'],
         'portfolio' => ['label' => 'Portfolio', 'route' => 'portfolio.index'],
         'blog' => ['label' => 'Blog', 'route' => 'blog.index'],
         'contact' => ['label' => 'Contact', 'route' => 'contact.create'],

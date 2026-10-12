@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\HandlesImageUploads;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProductRequest;
 use App\Models\Product;
@@ -11,6 +12,8 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    use HandlesImageUploads;
+
     /**
      * Paginated digital product list.
      */
@@ -40,7 +43,11 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request): RedirectResponse
     {
-        Product::create($request->validated());
+        $attributes = $request->validated();
+
+        $attributes['logo'] = $this->storeUploadedImage($request->file('logo'), 'uploads/products');
+
+        Product::create($attributes);
 
         return redirect()
             ->route('admin.products.index')
@@ -60,7 +67,15 @@ class ProductController extends Controller
      */
     public function update(StoreProductRequest $request, Product $product): RedirectResponse
     {
-        $product->update($request->validated());
+        $attributes = $request->validated();
+
+        $attributes['logo'] = $this->replaceUploadedImage(
+            $request->file('logo'),
+            $product->logo,
+            'uploads/products'
+        );
+
+        $product->update($attributes);
 
         return redirect()
             ->route('admin.products.index')
@@ -72,6 +87,8 @@ class ProductController extends Controller
      */
     public function destroy(Product $product): RedirectResponse
     {
+        $this->forgetUploadedImage($product->logo);
+
         $product->delete();
 
         return redirect()

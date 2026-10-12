@@ -2,8 +2,8 @@
 
 namespace App\Services\Payments\Drivers;
 
-use App\Models\Order;
 use App\Models\PaymentGateway;
+use App\Services\Payments\Contracts\Payable;
 use App\Services\Payments\Contracts\PaymentGatewayDriver;
 use App\Services\Payments\DTOs\CheckoutSession;
 use App\Services\Payments\Exceptions\GatewayException;
@@ -44,14 +44,14 @@ class PhonePeDriver implements PaymentGatewayDriver
     /**
      * Create a PhonePe checkout session and return its hosted redirect URL.
      */
-    public function createCheckout(Order $order): CheckoutSession
+    public function createCheckout(Payable $payable): CheckoutSession
     {
         $credentials = $this->requireCredentials();
 
         $payload = [
-            'requestId' => (string) $order->reference,
-            'amount' => $order->amount,
-            'merchantOrderId' => (string) $order->reference,
+            'requestId' => (string) $payable->paymentReference(),
+            'amount' => $payable->paymentAmount(),
+            'merchantOrderId' => (string) $payable->paymentReference(),
             'callbackUrl' => route('checkout.webhook', 'phonepe'),
             'redirectMode' => 'POST',
         ];
@@ -83,7 +83,7 @@ class PhonePeDriver implements PaymentGatewayDriver
             throw new GatewayException('PhonePe did not return a redirect URL.');
         }
 
-        $order->forceFill(['gateway_order_id' => $response->json('data.paymentId')])->save();
+        $payable->recordGatewayResult(['gateway_order_id' => $response->json('data.paymentId')]);
 
         return CheckoutSession::redirect('phonepe', $redirectUrl);
     }
@@ -92,23 +92,19 @@ class PhonePeDriver implements PaymentGatewayDriver
      * Hosted return URLs carry no signature, so the status API is the only
      * trustworthy source — confirm here and reject unless fully paid.
      */
-    public function verifyCallback(Order $order, Request $request): void
+    public function verifyCallback(Payable $payable, Request $request): void
     {
         $merchantOrderId = (string) $request->input('merchantOrderId', $request->input('data.merchantOrderId', ''));
 
-        if ($merchantOrderId !== '' && $merchantOrderId !== $order->reference) {
+        if ($merchantOrderId !== '' && $merchantOrderId !== $payable->paymentReference()) {
             throw new GatewayException('The PhonePe callback references a different order.');
         }
 
-        if ($this->confirm($order) !== true) {
+        if ($this->confirm($payable) !== true) {
             throw new GatewayException('PhonePe has not confirmed this payment yet.');
         }
 
-        $order->forceFill([
-            'gateway_payload' => array_merge($order->gateway_payload ?? [], [
-                'verified_via' => 'status_api',
-            ]),
-        ])->save();
+        $payable->recordGatewayResult([], ['verified_via' => 'status_api']);
     }
 
     public function verifyWebhookSignature(Request $request): bool
@@ -137,7 +133,7 @@ class PhonePeDriver implements PaymentGatewayDriver
     /**
      * Ask PhonePe for the authoritative order state.
      */
-    public function confirm(Order $order): ?bool
+    public function confirm(Payable $payable): ?bool
     {
         $credentials = $this->gateway->credentials();
         $salt = $credentials['salt'] ?? '';
@@ -146,7 +142,7 @@ class PhonePeDriver implements PaymentGatewayDriver
             return null;
         }
 
-        $path = '/pg/v2/order/'.$order->reference.'/status';
+        $path = '/pg/v2/order/'.$payable->paymentReference().'/status';
         $checksum = hash('sha256', $path.$salt).'###'.($credentials['salt_index'] ?? '1');
 
         $response = Http::withHeaders([

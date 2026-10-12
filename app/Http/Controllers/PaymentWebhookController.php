@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\ShopOrder;
 use App\Services\Payments\CheckoutService;
 use App\Services\Payments\GatewayManager;
+use App\Services\Shop\CheckoutService as ShopCheckoutService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -20,6 +22,7 @@ class PaymentWebhookController extends Controller
     public function __construct(
         private readonly GatewayManager $gateways,
         private readonly CheckoutService $checkout,
+        private readonly ShopCheckoutService $shopCheckout,
     ) {}
 
     public function __invoke(Request $request, string $driver): Response
@@ -34,30 +37,50 @@ class PaymentWebhookController extends Controller
 
         $signatureValid = $resolved->verifyWebhookSignature($request);
 
-        [$orderId, $eventType] = $this->extractOrder($driver, $request);
+        [$reference, $eventType] = $this->extractOrder($driver, $request);
 
-        $order = $orderId !== null
-            ? Order::query()->where('reference', $orderId)->first()
-            : null;
-
-        if ($order === null) {
+        if ($reference === null) {
             return response('ignored', 200);
         }
 
-        // Never trust the payload alone — ask the provider.
-        if ($resolved->confirm($order) !== true) {
-            return response('unconfirmed', 200);
+        $order = Order::query()->where('reference', $reference)->first();
+
+        if ($order !== null) {
+            // Never trust the payload alone — ask the provider.
+            if ($resolved->confirm($order) !== true) {
+                return response('unconfirmed', 200);
+            }
+
+            $this->checkout->complete($order, [
+                'event' => $eventType,
+                'driver' => $driver,
+                'signature_valid' => $signatureValid,
+                'reference' => $order->reference,
+                'signature' => $request->header('x-webhook-signature') ?? $request->header('X-Signature'),
+            ], 'inbound');
+
+            return response('ok', 200);
         }
 
-        $this->checkout->complete($order, [
-            'event' => $eventType,
-            'driver' => $driver,
-            'signature_valid' => $signatureValid,
-            'reference' => $order->reference,
-            'signature' => $request->header('x-webhook-signature') ?? $request->header('X-Signature'),
-        ], 'inbound');
+        $shopOrder = ShopOrder::query()->where('reference', $reference)->first();
 
-        return response('ok', 200);
+        if ($shopOrder !== null) {
+            if ($resolved->confirm($shopOrder) !== true) {
+                return response('unconfirmed', 200);
+            }
+
+            $this->shopCheckout->complete($shopOrder, [
+                'event' => $eventType,
+                'driver' => $driver,
+                'signature_valid' => $signatureValid,
+                'reference' => $shopOrder->reference,
+                'signature' => $request->header('x-webhook-signature') ?? $request->header('X-Signature'),
+            ], 'inbound');
+
+            return response('ok', 200);
+        }
+
+        return response('ignored', 200);
     }
 
     /**
