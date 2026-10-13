@@ -3,17 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ProjectStatus;
+use App\Http\Controllers\Concerns\RendersBuilderPages;
 use App\Models\ShowcaseProject;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class ShowcaseController extends Controller
 {
+    use RendersBuilderPages;
+
     /**
      * The poster wall of ongoing and upcoming projects, with filters.
      */
     public function index(Request $request): View
     {
+        if ($builder = $this->builderPage('projects')) {
+            return $builder;
+        }
+
         $activeStatus = ProjectStatus::tryFrom((string) $request->query('status', ''));
         $activeIndustry = (string) $request->query('industry', '');
 

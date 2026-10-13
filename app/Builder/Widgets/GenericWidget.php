@@ -139,6 +139,7 @@ abstract class GenericWidget implements Widget
                 'options' => [
                     'default' => 'Default',
                     'tight' => 'Tight',
+                    'flush' => 'Tight, no top',
                     'none' => 'None',
                 ],
             ],

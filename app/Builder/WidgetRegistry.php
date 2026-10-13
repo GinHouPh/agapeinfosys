@@ -6,16 +6,25 @@ use App\Builder\Contracts\Widget;
 use App\Builder\Widgets\ClientsMarqueeWidget;
 use App\Builder\Widgets\ContactSectionWidget;
 use App\Builder\Widgets\CtaBannerWidget;
+use App\Builder\Widgets\CtaCardWidget;
 use App\Builder\Widgets\FeatureCardsWidget;
+use App\Builder\Widgets\FormEmbedWidget;
 use App\Builder\Widgets\HeroWidget;
 use App\Builder\Widgets\MarqueeBandWidget;
 use App\Builder\Widgets\MediaTextWidget;
+use App\Builder\Widgets\PageHeroWidget;
+use App\Builder\Widgets\PortfolioGridWidget;
 use App\Builder\Widgets\PostsGridWidget;
+use App\Builder\Widgets\PostsListWidget;
 use App\Builder\Widgets\ProcessStepsWidget;
 use App\Builder\Widgets\ProjectsGridWidget;
+use App\Builder\Widgets\RecordBodyWidget;
+use App\Builder\Widgets\RecordCoverWidget;
+use App\Builder\Widgets\RecordRelatedWidget;
 use App\Builder\Widgets\RichTextWidget;
 use App\Builder\Widgets\ServicesGridWidget;
 use App\Builder\Widgets\ServicesListWidget;
+use App\Builder\Widgets\ShowcaseGridWidget;
 use App\Builder\Widgets\StatementWidget;
 use App\Builder\Widgets\StatsGridWidget;
 use App\Builder\Widgets\TestimonialsGridWidget;
@@ -37,6 +46,7 @@ class WidgetRegistry
      */
     private array $widgets = [
         HeroWidget::class,
+        PageHeroWidget::class,
         StatementWidget::class,
         MarqueeBandWidget::class,
         MediaTextWidget::class,
@@ -48,11 +58,19 @@ class WidgetRegistry
         ServicesGridWidget::class,
         ServicesListWidget::class,
         ProjectsGridWidget::class,
+        PortfolioGridWidget::class,
+        ShowcaseGridWidget::class,
         TestimonialsGridWidget::class,
         ClientsMarqueeWidget::class,
         PostsGridWidget::class,
+        PostsListWidget::class,
+        FormEmbedWidget::class,
         ContactSectionWidget::class,
         CtaBannerWidget::class,
+        CtaCardWidget::class,
+        RecordCoverWidget::class,
+        RecordBodyWidget::class,
+        RecordRelatedWidget::class,
     ];
 
     /**

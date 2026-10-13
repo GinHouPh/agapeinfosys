@@ -4,13 +4,23 @@
 @section('heading', 'Pages')
 
 @section('content')
+    @php
+        $flagshipSlugs = array_keys(\App\Models\Page::flagshipRoutes());
+        $templateSlugs = array_keys(\App\Models\Page::recordTemplates());
+    @endphp
+
     <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <p class="max-w-2xl text-sm text-muted">
-            Build landing pages from widgets in the visual canvas. A page published with the slug
-            <span class="font-mono text-xs text-accent">home</span>,
-            <span class="font-mono text-xs text-accent">about</span> or
-            <span class="font-mono text-xs text-accent">services</span>
-            replaces that flagship route; every other page lives at
+            Build pages from widgets in the visual canvas. A page published with a reserved slug
+            takes over that route —
+            @foreach ($flagshipSlugs as $index => $slug)
+                <span class="font-mono text-xs text-accent">{{ $slug }}</span>@if (! $loop->last), @endif
+            @endforeach
+            for the marketing pages, and
+            @foreach ($templateSlugs as $index => $slug)
+                <span class="font-mono text-xs text-accent">{{ $slug }}</span>@if (! $loop->last), @endif
+            @endforeach
+            for every record detail page. Anything else lives at
             <span class="font-mono text-xs text-accent">/pages/[slug]</span>.
         </p>
 
@@ -35,24 +45,27 @@
                 </thead>
                 <tbody>
                     @forelse ($pages as $page)
-                        @php
-                            $flagship = ['home', 'about', 'services'];
-                        @endphp
                         <tr>
                             <td>
                                 <a href="{{ route('admin.pages.edit', $page) }}" class="text-white hover:text-accent">
                                     {{ $page->title }}
                                 </a>
-                                @if (in_array($page->slug, $flagship, true))
+                                @if ($page->isFlagship())
                                     <span class="tag ml-2">Flagship</span>
+                                @elseif ($page->template() !== null)
+                                    <span class="tag ml-2">Template</span>
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ in_array($page->slug, $flagship, true) ? route($page->slug === 'services' ? 'services.index' : $page->slug) : route('pages.show', $page) }}"
-                                   target="_blank" rel="noopener"
-                                   class="font-mono text-xs text-accent">
-                                    /{{ in_array($page->slug, $flagship, true) ? $page->slug : 'pages/'.$page->slug }}
-                                </a>
+                                @if ($page->targetUrl() !== null)
+                                    <a href="{{ $page->targetUrl() }}"
+                                       target="_blank" rel="noopener"
+                                       class="font-mono text-xs text-accent">
+                                        {{ $page->targetPath() }}
+                                    </a>
+                                @else
+                                    <span class="font-mono text-xs text-muted">{{ $page->targetPath() }}</span>
+                                @endif
                             </td>
                             <td class="text-muted">{{ count($page->blocks()) }}</td>
                             <td>

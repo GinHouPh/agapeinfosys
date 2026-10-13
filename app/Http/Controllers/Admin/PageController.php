@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Builder\PageRenderer;
+use App\Builder\RecordResolver;
 use App\Builder\SchemaSanitizer;
 use App\Builder\WidgetRegistry;
 use App\Http\Controllers\Controller;
@@ -48,9 +49,17 @@ class PageController extends Controller
 
     /**
      * The visual builder canvas for one page.
+     *
+     * Record templates preview against a live record of their type so the
+     * canvas shows real content rather than a placeholder.
      */
-    public function edit(Page $page, WidgetRegistry $registry, PageRenderer $renderer): View
+    public function edit(Page $page, WidgetRegistry $registry, PageRenderer $renderer, RecordResolver $resolver): View
     {
+        $context = [
+            'record' => $resolver->forPage($page),
+            'authoring' => true,
+        ];
+
         $initial = [];
 
         foreach ($page->blocks() as $block) {
@@ -58,7 +67,7 @@ class PageController extends Controller
                 'id' => $block['id'],
                 'widget' => $block['widget'],
                 'settings' => $block['settings'],
-                'html' => $renderer->renderBlock($block['widget'], $block['settings']),
+                'html' => $renderer->renderBlock($block['widget'], $block['settings'], $context),
             ];
         }
 
@@ -67,6 +76,7 @@ class PageController extends Controller
             'widgets' => $registry->manifest(),
             'categories' => array_keys($registry->grouped()),
             'initialBlocks' => $initial,
+            'template' => $page->template(),
         ]);
     }
 

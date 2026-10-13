@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Builder\PageRenderer;
+use App\Builder\RecordResolver;
 use App\Builder\WidgetRegistry;
 use App\Http\Controllers\Concerns\HandlesImageUploads;
 use App\Http\Controllers\Controller;
@@ -24,16 +25,21 @@ class PageBuilderController extends Controller
     public function __construct(
         private readonly WidgetRegistry $registry,
         private readonly PageRenderer $renderer,
+        private readonly RecordResolver $resolver,
     ) {}
 
     /**
      * Render a single widget's markup for the canvas preview.
+     *
+     * The page slug is echoed back so record templates preview against a live
+     * record of their type instead of the placeholder visitors never see.
      */
     public function preview(Request $request): JsonResponse
     {
         $data = $request->validate([
             'widget' => ['required', 'string', 'max:60'],
             'settings' => ['nullable', 'array'],
+            'page' => ['nullable', 'string', 'max:120'],
         ]);
 
         $widget = $this->registry->get($data['widget']);
@@ -42,8 +48,13 @@ class PageBuilderController extends Controller
             return response()->json(['html' => ''], 422);
         }
 
+        $context = [
+            'record' => $this->resolver->forSlug((string) ($data['page'] ?? '')),
+            'authoring' => true,
+        ];
+
         return response()->json([
-            'html' => $this->renderer->renderBlock($data['widget'], $data['settings'] ?? []),
+            'html' => $this->renderer->renderBlock($data['widget'], $data['settings'] ?? [], $context),
         ]);
     }
 

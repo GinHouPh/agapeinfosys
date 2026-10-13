@@ -7,11 +7,15 @@ use App\Models\Setting;
 use Illuminate\Database\Seeder;
 
 /**
- * Seed the three flagship marketing pages as builder-managed drafts.
+ * Seed every site page as a builder-managed draft.
  *
- * They mirror the current hand-built home, about and services views so the
- * team can review them in the builder and publish when ready. Until a page is
- * published the hand-built view keeps serving the route, so nothing breaks.
+ * Each schema mirrors the current hand-built view of that route so the team can
+ * review it in the builder and publish when ready. Until a page is published
+ * the hand-built view keeps serving the route, so nothing breaks.
+ *
+ * Slugs in config/builder.php are reserved: 'home', 'about', ... take over a
+ * marketing route, and 'service-detail', 'case-study-detail', ... take over
+ * every detail page of that record type, rendering with the current record.
  */
 class PageSeeder extends Seeder
 {
@@ -41,21 +45,75 @@ class PageSeeder extends Seeder
         ]);
 
         $this->seedPage($this->homeSchema($stats, $process), [
-            'title' => 'Home',
+            'title' => 'Agape Infosys — Software Solutions & IT Consultancy',
             'slug' => 'home',
             'meta_description' => 'Agape Infosys designs, engineers and supports custom software, web platforms, mobile apps and cloud systems for growing enterprises.',
         ]);
 
         $this->seedPage($this->aboutSchema($stats, $values), [
-            'title' => 'About',
+            'title' => 'About Agape Infosys — Engineering Excellence, Consultancy & Delivery',
             'slug' => 'about',
             'meta_description' => 'Meet Agape Infosys: a senior team of software engineers and IT consultants delivering web, mobile and cloud systems since 2013.',
         ]);
 
         $this->seedPage($this->servicesSchema(), [
-            'title' => 'Services',
+            'title' => 'Services — Software Development & IT Consultancy | Agape Infosys',
             'slug' => 'services',
             'meta_description' => 'Custom software development, web and mobile engineering, cloud and DevOps, digital transformation consulting and product design from Agape Infosys.',
+        ]);
+
+        $this->seedPage($this->portfolioSchema(), [
+            'title' => 'Case Studies — Selected Work | Agape Infosys',
+            'slug' => 'portfolio',
+            'meta_description' => 'Selected software engineering case studies from Agape Infosys: web platforms, mobile products, cloud migrations and enterprise integrations.',
+        ]);
+
+        $this->seedPage($this->showcaseSchema(), [
+            'title' => 'Projects — Ongoing & Upcoming | Agape Infosys',
+            'slug' => 'projects',
+            'meta_description' => 'The products Agape Infosys is building now and proposing next — spanning OTT, appointment booking, hospital management, POS, logistics and more.',
+        ]);
+
+        $this->seedPage($this->blogSchema(), [
+            'title' => 'Blog — Insights on Software, Cloud & Digital Transformation | Agape Infosys',
+            'slug' => 'blog',
+            'meta_description' => 'Articles from the Agape Infosys team on software engineering, cloud operations, product delivery and digital transformation.',
+        ]);
+
+        $this->seedPage($this->contactSchema(), [
+            'title' => 'Contact Agape Infosys — Start A Project',
+            'slug' => 'contact',
+            'meta_description' => 'Talk to the Agape Infosys team about custom software development, IT consultancy, cloud and digital transformation engagements.',
+        ]);
+
+        $this->seedPage($this->requirementSchema(), [
+            'title' => 'Requirement Specification | Agape Infosys',
+            'slug' => 'requirements',
+            'meta_description' => 'The more detail you share, the sharper our quotation. Fill in the brief below — it takes about five minutes.',
+        ]);
+
+        $this->seedPage($this->serviceDetailSchema(), [
+            'title' => 'Service | Agape Infosys Services',
+            'slug' => 'service-detail',
+            'meta_description' => 'A capability delivered by Agape Infosys.',
+        ]);
+
+        $this->seedPage($this->caseStudyDetailSchema(), [
+            'title' => 'Case Study | Agape Infosys',
+            'slug' => 'case-study-detail',
+            'meta_description' => 'A case study by Agape Infosys.',
+        ]);
+
+        $this->seedPage($this->articleDetailSchema(), [
+            'title' => 'Article | Agape Infosys Blog',
+            'slug' => 'article-detail',
+            'meta_description' => 'Practical notes from the Agape Infosys team on software engineering, cloud, delivery and digital transformation.',
+        ]);
+
+        $this->seedPage($this->formDetailSchema(), [
+            'title' => 'Form | Agape Infosys',
+            'slug' => 'form-detail',
+            'meta_description' => 'Tell us about your project — Agape Infosys replies within one business day.',
         ]);
     }
 
@@ -425,6 +483,467 @@ class PageSeeder extends Seeder
                             ['label' => 'Talk To A Consultant', 'url' => '/contact', 'variant' => 'accent'],
                         ],
                         'spacing' => 'tight',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function portfolioSchema(): array
+    {
+        return [
+            'blocks' => [
+                [
+                    'widget' => 'page-hero',
+                    'settings' => [
+                        'source' => 'static',
+                        'eyebrow' => 'Portfolio',
+                        'title_before' => '',
+                        'accent' => 'Work',
+                        'title_after' => 'that shipped, scaled and stayed shipped.',
+                        'lead' => 'A selection of the platforms, products and systems we have designed, built and operated for our clients.',
+                        'show_breadcrumb' => false,
+                        'show_meta' => false,
+                        'show_author' => false,
+                        'gradient' => 'left',
+                        'spacing' => 'default',
+                    ],
+                ],
+                [
+                    'widget' => 'portfolio-grid',
+                    'settings' => [
+                        'show_filters' => true,
+                        'title' => '',
+                        'subtitle' => '',
+                        'mark' => '',
+                        'align' => 'left',
+                        'empty_text' => 'No case studies published yet.',
+                        'background' => 'surface',
+                        'spacing' => 'default',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function showcaseSchema(): array
+    {
+        return [
+            'blocks' => [
+                [
+                    'widget' => 'page-hero',
+                    'settings' => [
+                        'source' => 'static',
+                        'eyebrow' => 'Showcase',
+                        'title_before' => '',
+                        'accent' => 'Projects',
+                        'title_after' => 'in the making — and coming soon.',
+                        'lead' => 'A look at the products we are building right now and the ones we are gearing up to launch — across the industries we know best.',
+                        'show_breadcrumb' => false,
+                        'show_meta' => false,
+                        'show_author' => false,
+                        'gradient' => 'left',
+                        'spacing' => 'default',
+                    ],
+                ],
+                [
+                    'widget' => 'showcase-grid',
+                    'settings' => [
+                        'show_stage_filter' => true,
+                        'show_industry_filter' => true,
+                        'title' => '',
+                        'subtitle' => '',
+                        'mark' => '',
+                        'align' => 'left',
+                        'empty_text' => 'No projects match this filter — try another stage or industry.',
+                        'background' => 'surface',
+                        'spacing' => 'default',
+                    ],
+                ],
+                [
+                    'widget' => 'cta-card',
+                    'settings' => [
+                        'heading' => 'Have a project in mind?',
+                        'lead' => 'Share your requirement specification and we will come back with scope, timelines and a quotation.',
+                        'button_label' => 'Start a Requirement Brief',
+                        'button_url' => '/requirements',
+                        'variant' => 'accent',
+                        'background' => 'ink',
+                        'spacing' => 'tight',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function blogSchema(): array
+    {
+        return [
+            'blocks' => [
+                [
+                    'widget' => 'page-hero',
+                    'settings' => [
+                        'source' => 'static',
+                        'eyebrow' => 'Blog',
+                        'title_before' => '',
+                        'accent' => 'Read',
+                        'title_after' => 'our latest articles',
+                        'lead' => 'Practical notes from the people doing the work — delivery, architecture, cloud economics and everything in between.',
+                        'show_breadcrumb' => false,
+                        'show_meta' => false,
+                        'show_author' => false,
+                        'gradient' => 'right',
+                        'spacing' => 'default',
+                    ],
+                ],
+                [
+                    'widget' => 'posts-list',
+                    'settings' => [
+                        'per_page' => 6,
+                        'show_filters' => true,
+                        'show_pagination' => true,
+                        'title' => '',
+                        'subtitle' => '',
+                        'mark' => '',
+                        'align' => 'left',
+                        'empty_text' => 'No articles published yet.',
+                        'background' => 'surface',
+                        'spacing' => 'default',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function contactSchema(): array
+    {
+        return [
+            'blocks' => [
+                [
+                    'widget' => 'page-hero',
+                    'settings' => [
+                        'source' => 'static',
+                        'eyebrow' => 'Contact',
+                        'title_before' => '',
+                        'accent' => 'Connect',
+                        'title_after' => 'with customers to your business — starting with ours.',
+                        'lead' => 'Send us the outline of your project, or just the problem you are stuck on. We reply to every enquiry within one business day.',
+                        'show_breadcrumb' => false,
+                        'show_meta' => false,
+                        'show_author' => false,
+                        'gradient' => 'left',
+                        'spacing' => 'default',
+                    ],
+                ],
+                [
+                    'widget' => 'contact-section',
+                    'settings' => [
+                        'subtitle' => 'Studio & mailing details',
+                        'title' => 'Where To Find Us',
+                        'mark' => 'contact',
+                        'lead' => '',
+                        'show_form' => true,
+                        'swap_sides' => true,
+                        'form_heading' => "Let's talk business",
+                        'form_compact' => false,
+                        'show_office' => true,
+                        'show_mailing' => true,
+                        'show_studio' => false,
+                        'show_hours' => true,
+                        'hours_from_business' => true,
+                        'hours_label' => 'Working Hours',
+                        'hours_body' => "Monday – Friday, 9:30 – 18:30 IST.\nCritical support is staffed around the clock.",
+                        'show_business' => true,
+                        'business_heading' => 'Business Details',
+                        'background' => 'surface',
+                        'spacing' => 'default',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function requirementSchema(): array
+    {
+        return [
+            'blocks' => [
+                [
+                    'widget' => 'page-hero',
+                    'settings' => [
+                        'source' => 'static',
+                        'eyebrow' => 'Requirement Specification',
+                        'title_before' => 'Tell us what to ',
+                        'accent' => 'build',
+                        'title_after' => '.',
+                        'lead' => 'The more detail you share, the sharper our quotation. Fill in the brief below — it takes about five minutes, and every field helps us scope honestly.',
+                        'show_breadcrumb' => false,
+                        'show_meta' => false,
+                        'show_author' => false,
+                        'gradient' => 'left',
+                        'spacing' => 'default',
+                    ],
+                ],
+                [
+                    'widget' => 'form-embed',
+                    'settings' => [
+                        'use_page_record' => false,
+                        'form' => 'requirement-specification',
+                        'empty_text' => 'No form selected yet.',
+                        'background' => 'surface',
+                        'spacing' => 'default',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function serviceDetailSchema(): array
+    {
+        return [
+            'blocks' => [
+                [
+                    'widget' => 'page-hero',
+                    'settings' => [
+                        'source' => 'record',
+                        'eyebrow' => '',
+                        'title_before' => '',
+                        'accent' => '',
+                        'title_after' => '',
+                        'lead' => '',
+                        'show_breadcrumb' => true,
+                        'breadcrumb_parent_label' => 'Services',
+                        'breadcrumb_parent_url' => '/services',
+                        'show_meta' => false,
+                        'show_author' => false,
+                        'gradient' => 'right',
+                        'spacing' => 'default',
+                    ],
+                ],
+                [
+                    'widget' => 'record-body',
+                    'settings' => [
+                        'layout' => 'media-cta',
+                        'show_pullquote' => false,
+                        'show_back' => false,
+                        'back_label' => 'Back To Articles',
+                        'back_url' => '/blog',
+                        'show_list' => true,
+                        'list_title' => '',
+                        'cta_heading' => 'Engage us',
+                        'cta_body' => 'Need this capability embedded in your team? We can start with a two week discovery sprint.',
+                        'cta_label' => 'Request A Quote',
+                        'cta_url' => '/contact',
+                        'facts_cta_label' => 'Build Something Like This',
+                        'facts_visit_label' => 'Visit project →',
+                        'background' => 'ink',
+                        'spacing' => 'tight',
+                    ],
+                ],
+                [
+                    'widget' => 'record-related',
+                    'settings' => [
+                        'limit' => 3,
+                        'title' => '',
+                        'subtitle' => '',
+                        'align' => 'center',
+                        'empty_text' => 'More capabilities will be published shortly.',
+                        'background' => 'surface',
+                        'spacing' => 'default',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function caseStudyDetailSchema(): array
+    {
+        return [
+            'blocks' => [
+                [
+                    'widget' => 'page-hero',
+                    'settings' => [
+                        'source' => 'record',
+                        'eyebrow' => '',
+                        'title_before' => '',
+                        'accent' => '',
+                        'title_after' => '',
+                        'lead' => '',
+                        'show_breadcrumb' => true,
+                        'breadcrumb_parent_label' => 'Portfolio',
+                        'breadcrumb_parent_url' => '/portfolio',
+                        'show_meta' => false,
+                        'show_author' => false,
+                        'gradient' => 'right',
+                        'spacing' => 'default',
+                    ],
+                ],
+                [
+                    'widget' => 'record-cover',
+                    'settings' => [
+                        'aspect' => '1300/560',
+                        'decorative' => true,
+                        'background' => 'ink',
+                        'spacing' => 'tight',
+                    ],
+                ],
+                [
+                    'widget' => 'record-body',
+                    'settings' => [
+                        'layout' => 'facts',
+                        'show_pullquote' => false,
+                        'show_back' => false,
+                        'back_label' => 'Back To Articles',
+                        'back_url' => '/portfolio',
+                        'show_list' => true,
+                        'list_title' => '',
+                        'cta_heading' => 'Engage us',
+                        'cta_body' => '',
+                        'cta_label' => 'Request A Quote',
+                        'cta_url' => '/contact',
+                        'facts_cta_label' => 'Build Something Like This',
+                        'facts_visit_label' => 'Visit project →',
+                        'background' => 'ink',
+                        'spacing' => 'flush',
+                    ],
+                ],
+                [
+                    'widget' => 'record-related',
+                    'settings' => [
+                        'limit' => 3,
+                        'title' => '',
+                        'subtitle' => '',
+                        'align' => 'center',
+                        'empty_text' => 'More case studies will be published shortly.',
+                        'background' => 'surface',
+                        'spacing' => 'default',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function articleDetailSchema(): array
+    {
+        return [
+            'blocks' => [
+                [
+                    'widget' => 'page-hero',
+                    'settings' => [
+                        'source' => 'record',
+                        'eyebrow' => '',
+                        'title_before' => '',
+                        'accent' => '',
+                        'title_after' => '',
+                        'lead' => '',
+                        'show_breadcrumb' => true,
+                        'breadcrumb_parent_label' => 'Blog',
+                        'breadcrumb_parent_url' => '/blog',
+                        'show_meta' => true,
+                        'show_author' => true,
+                        'gradient' => 'right',
+                        'spacing' => 'default',
+                    ],
+                ],
+                [
+                    'widget' => 'record-cover',
+                    'settings' => [
+                        'aspect' => '1300/560',
+                        'decorative' => false,
+                        'background' => 'ink',
+                        'spacing' => 'tight',
+                    ],
+                ],
+                [
+                    'widget' => 'record-body',
+                    'settings' => [
+                        'layout' => 'single',
+                        'show_pullquote' => true,
+                        'show_back' => true,
+                        'back_label' => 'Back To Articles',
+                        'back_url' => '/blog',
+                        'show_list' => true,
+                        'list_title' => '',
+                        'cta_heading' => 'Engage us',
+                        'cta_body' => '',
+                        'cta_label' => 'Request A Quote',
+                        'cta_url' => '/contact',
+                        'facts_cta_label' => 'Build Something Like This',
+                        'facts_visit_label' => 'Visit project →',
+                        'background' => 'ink',
+                        'spacing' => 'tight',
+                    ],
+                ],
+                [
+                    'widget' => 'record-related',
+                    'settings' => [
+                        'limit' => 3,
+                        'title' => '',
+                        'subtitle' => '',
+                        'align' => 'center',
+                        'empty_text' => 'More articles will be published shortly.',
+                        'background' => 'surface',
+                        'spacing' => 'default',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function formDetailSchema(): array
+    {
+        return [
+            'blocks' => [
+                [
+                    'widget' => 'page-hero',
+                    'settings' => [
+                        'source' => 'record',
+                        'eyebrow' => '',
+                        'title_before' => '',
+                        'accent' => '',
+                        'title_after' => '',
+                        'lead' => '',
+                        'show_breadcrumb' => false,
+                        'show_meta' => false,
+                        'show_author' => false,
+                        'gradient' => 'left',
+                        'spacing' => 'default',
+                    ],
+                ],
+                [
+                    'widget' => 'form-embed',
+                    'settings' => [
+                        'use_page_record' => true,
+                        'form' => '',
+                        'empty_text' => 'This form is not active yet.',
+                        'background' => 'surface',
+                        'spacing' => 'default',
                     ],
                 ],
             ],

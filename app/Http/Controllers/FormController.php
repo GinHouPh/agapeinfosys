@@ -3,18 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Enums\FormFieldType;
+use App\Http\Controllers\Concerns\RendersBuilderPages;
 use App\Models\Form;
 use App\Models\FormField;
 use App\Models\FormSubmission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationRule;
 use Illuminate\View\View;
 
 class FormController extends Controller
 {
+    use RendersBuilderPages;
+
     /**
      * The slug of the requirement specification form behind /requirements.
      */
@@ -28,6 +32,13 @@ class FormController extends Controller
         $this->ensureVisible($form);
 
         $form->load('fields');
+
+        if ($builder = $this->builderPage('form-detail', ['record' => $form], [
+            'pageTitle' => $form->title.' | Agape Infosys',
+            'pageDescription' => Str::limit(strip_tags($form->description ?? ''), 155, '…'),
+        ])) {
+            return $builder;
+        }
 
         return view('forms.show', [
             'form' => $form,
@@ -102,6 +113,10 @@ class FormController extends Controller
             ->where('slug', self::REQUIREMENT_FORM_SLUG)
             ->with('fields')
             ->firstOrFail();
+
+        if ($builder = $this->builderPage('requirements')) {
+            return $builder;
+        }
 
         return view('forms.show', [
             'form' => $form,

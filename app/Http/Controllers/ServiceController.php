@@ -30,6 +30,13 @@ class ServiceController extends Controller
      */
     public function show(Request $request, Service $service): View
     {
+        if ($builder = $this->builderPage('service-detail', ['record' => $service], [
+            'pageTitle' => $service->title.' | Agape Infosys Services',
+            'pageDescription' => $service->excerpt ?: $service->title.' delivered by Agape Infosys.',
+        ])) {
+            return $builder;
+        }
+
         return view('services.show', [
             'service' => $service,
             'others' => Service::query()

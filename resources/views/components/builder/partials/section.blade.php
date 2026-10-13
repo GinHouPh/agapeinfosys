@@ -16,6 +16,11 @@
     if ($spacing === 'tight') {
         $classes[] = 'section--tight';
     }
+
+    if ($spacing === 'flush') {
+        $classes[] = 'section--tight';
+        $classes[] = 'pt-0';
+    }
 @endphp
 
 <section @class(['section', ...$classes])>

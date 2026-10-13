@@ -15,9 +15,15 @@
         <input class="input" type="text" id="slug" name="slug"
                value="{{ old('slug', $page?->slug) }}" placeholder="auto from title">
         <p class="text-sm text-muted">
-            Use <span class="font-mono text-xs text-accent">home</span>,
-            <span class="font-mono text-xs text-accent">about</span> or
-            <span class="font-mono text-xs text-accent">services</span> to replace that flagship route.
+            Reserved slugs take over a live route when published —
+            @foreach (array_keys(\App\Models\Page::flagshipRoutes()) as $slug)
+                <span class="font-mono text-xs text-accent">{{ $slug }}</span>@if (! $loop->last), @endif
+            @endforeach
+            for the marketing pages, and
+            @foreach (array_keys(\App\Models\Page::recordTemplates()) as $slug)
+                <span class="font-mono text-xs text-accent">{{ $slug }}</span>@if (! $loop->last), @endif
+            @endforeach
+            for record detail pages.
         </p>
         @error('slug') <span class="field__error">{{ $message }}</span> @enderror
     </div>

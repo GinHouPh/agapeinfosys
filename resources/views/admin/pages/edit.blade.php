@@ -36,10 +36,9 @@
 @endpush
 
 @php
-    $flagship = in_array($page->slug, ['home', 'about', 'services'], true);
-    $liveUrl = $flagship
-        ? route($page->slug === 'services' ? 'services.index' : $page->slug)
-        : ($page->status->isPublished() ? route('pages.show', $page) : null);
+    $liveUrl = $page->template() !== null
+        ? null
+        : ($page->isFlagship() || $page->status->isPublished() ? $page->targetUrl() : null);
 @endphp
 
 <div class="mb-5 flex flex-wrap items-center justify-between gap-4">
@@ -58,6 +57,20 @@
         </button>
     </div>
 </div>
+
+@isset($template)
+    @if ($template)
+        <div class="mb-5 border border-accent p-4 text-sm text-body">
+            <span class="font-display text-xs tracking-[0.24em] text-accent uppercase">Record template</span>
+            <p class="mt-2">
+                Published, these sections replace every
+                <span class="font-mono text-xs text-white">{{ $template['pattern'] }}</span>
+                page. Each one renders them with its own record, so headings, body copy, covers and
+                related links come from the page being visited.
+            </p>
+        </div>
+    @endif
+@endisset
 
 <div class="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)_320px]">
 
@@ -298,7 +311,7 @@
             const res = await fetch(urls.preview, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': urls.csrf },
-                body: JSON.stringify({ widget: block.widget, settings: block.settings }),
+                body: JSON.stringify({ widget: block.widget, settings: block.settings, page: meta.slug }),
             });
             if (!res.ok) return;
             const data = await res.json();

@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Builder\PageRenderer;
 use App\Builder\WidgetRegistry;
+use App\Models\Project;
+use App\Models\Service;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -25,10 +27,12 @@ class WidgetLibraryTest extends TestCase
         $names = $this->registry->names();
 
         foreach ([
-            'hero', 'statement', 'marquee-band', 'media-text', 'rich-text',
+            'hero', 'page-hero', 'statement', 'marquee-band', 'media-text', 'rich-text',
             'feature-cards', 'stats', 'process-steps', 'values',
-            'services-grid', 'services-list', 'projects-grid', 'testimonials',
-            'clients-marquee', 'posts-grid', 'contact-section', 'cta-banner',
+            'services-grid', 'services-list', 'projects-grid', 'portfolio-grid',
+            'showcase-grid', 'testimonials', 'clients-marquee', 'posts-grid',
+            'posts-list', 'form-embed', 'contact-section', 'cta-banner', 'cta-card',
+            'record-cover', 'record-body', 'record-related',
         ] as $expected) {
             $this->assertContains($expected, $names, "Missing widget [{$expected}].");
         }
@@ -145,5 +149,78 @@ class WidgetLibraryTest extends TestCase
         $this->assertArrayHasKey('Layout', $grouped);
         $this->assertArrayHasKey('Content', $grouped);
         $this->assertArrayHasKey('Dynamic', $grouped);
+        $this->assertArrayHasKey('Record', $grouped);
+    }
+
+    public function test_record_widgets_render_against_a_live_record(): void
+    {
+        $renderer = app(PageRenderer::class);
+        $service = Service::factory()->create([
+            'title' => 'Cloud Migration',
+            'is_published' => true,
+        ]);
+
+        $context = ['record' => $service, 'authoring' => true];
+
+        foreach (['page-hero', 'record-cover', 'record-body', 'record-related'] as $name) {
+            $widget = $this->registry->get($name);
+
+            $html = $renderer->renderBlock($name, $widget->defaults(), $context);
+
+            $this->assertNotSame('', trim($html), "Widget [{$name}] rendered empty HTML with a record.");
+            $this->assertStringNotContainsString('Exception', $html, "Widget [{$name}] threw while rendering.");
+        }
+
+        $hero = $renderer->renderBlock('page-hero', ['source' => 'record'], $context);
+        $this->assertStringContainsString('Cloud Migration', $hero);
+    }
+
+    public function test_record_widgets_show_a_placeholder_without_a_record(): void
+    {
+        $renderer = app(PageRenderer::class);
+
+        $cases = [
+            'page-hero' => ['source' => 'record'],
+            'record-body' => [],
+            'record-related' => [],
+        ];
+
+        foreach ($cases as $name => $settings) {
+            $html = $renderer->renderBlock($name, $settings, []);
+
+            $this->assertStringContainsString(
+                'border-dashed',
+                $html,
+                "Widget [{$name}] should render a selectable placeholder when there is no record.",
+            );
+        }
+    }
+
+    public function test_record_body_layouts_render_their_aside(): void
+    {
+        $renderer = app(PageRenderer::class);
+        $project = Project::factory()->create([
+            'title' => 'Fleet Operations Platform',
+            'is_published' => true,
+            'client' => 'Northwind Logistics',
+        ]);
+
+        foreach (['single', 'media-cta', 'facts'] as $layout) {
+            $html = $renderer->renderBlock(
+                'record-body',
+                ['layout' => $layout],
+                ['record' => $project, 'authoring' => true],
+            );
+
+            $this->assertNotSame('', trim($html), "Record body layout [{$layout}] rendered empty HTML.");
+        }
+
+        $html = $renderer->renderBlock(
+            'record-body',
+            ['layout' => 'facts'],
+            ['record' => $project, 'authoring' => true],
+        );
+
+        $this->assertStringContainsString('Northwind Logistics', $html);
     }
 }
