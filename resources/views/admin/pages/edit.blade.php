@@ -55,6 +55,9 @@
         .pb-hint { border: 1px dashed var(--color-line); padding: 10px 12px; margin-bottom: 16px; font-size: 11px; line-height: 1.5; color: var(--color-muted); }
         .pb-hint b { color: var(--color-headline); font-weight: 500; }
         .pb-chip { display: inline-block; margin-top: 4px; padding: 1px 5px; border: 1px solid var(--color-line); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-accent); }
+        .pb-history button { padding: 4px 9px; line-height: 1.4; transition: color .15s, border-color .15s; }
+        .pb-history button[disabled] { opacity: .3; cursor: not-allowed; }
+        .pb-history button:not([disabled]):hover { border-color: var(--color-accent); color: var(--color-accent); }
     </style>
 @endpush
 
@@ -73,6 +76,10 @@
         @if ($liveUrl)
             <a href="{{ $liveUrl }}" target="_blank" rel="noopener" class="tag hover:border-accent hover:text-accent">View live</a>
         @endif
+        <div class="pb-history flex items-center gap-1">
+            <button type="button" id="pb-undo" class="tag" title="Undo (Ctrl+Z)" disabled>&#8630;</button>
+            <button type="button" id="pb-redo" class="tag" title="Redo (Ctrl+Shift+Z)" disabled>&#8631;</button>
+        </div>
         <span id="pb-save-status" class="text-xs text-muted"></span>
         <button type="button" id="pb-save" class="btn btn--accent">
             Save
@@ -252,6 +259,130 @@
         flashTimer = setTimeout(() => { saveStatus.textContent = ''; }, 2600);
     }
 
+    // --- History -----------------------------------------------------------
+    /**
+     * Undo is snapshot-per-step. Our tree is plain JSON, so cloning it is
+     * cheaper than the inverse-command bookkeeping a model-graph editor
+     * needs, and it makes every future mutation undoable for free.
+     *
+     * `steps[0]` is the tree as it loaded; each later step is the tree after
+     * one action. `index` is an implicit playhead rather than a stack top,
+     * so jumping to an arbitrary entry time-travels instead of stepping +-1.
+     */
+    const undoStack = { steps: [], index: -1, limit: 100 };
+    let coalesceTimer = null;
+    let coalesceLabel = null;
+    let groupDepth = 0;
+
+    function snapshot() {
+        return { blocks: JSON.parse(JSON.stringify(blocks)), selectedId, activeColumn };
+    }
+
+    function updateHistoryButtons() {
+        const undoBtn = document.getElementById('pb-undo');
+        const redoBtn = document.getElementById('pb-redo');
+        if (undoBtn) undoBtn.disabled = undoStack.index <= 0;
+        if (redoBtn) redoBtn.disabled = undoStack.index >= undoStack.steps.length - 1;
+    }
+
+    /** Record the tree as it stands, unless it already matches the live step. */
+    function pushStep(label) {
+        const live = undoStack.steps[undoStack.index];
+        if (live && JSON.stringify(live.blocks) === JSON.stringify(blocks)) return false;
+
+        // Acting after an undo throws the abandoned future away.
+        undoStack.steps = undoStack.steps.slice(0, undoStack.index + 1);
+        undoStack.steps.push(Object.assign(snapshot(), { label }));
+        if (undoStack.steps.length > undoStack.limit) undoStack.steps.shift();
+        undoStack.index = undoStack.steps.length - 1;
+        updateHistoryButtons();
+        return true;
+    }
+
+    /**
+     * The funnel every mutation goes through: run it, record the result as
+     * one step, queue a save. Anything touching `blocks` without coming
+     * through here is invisible to undo — and before this funnel existed,
+     * palette adds were invisible to the save timer as well.
+     */
+    function commit(label, mutate) {
+        flushCoalesce();
+        mutate();
+        queueSave();
+        return pushStep(label);
+    }
+
+    /** A gesture that may end in several splices still lands as one step. */
+    function withGroup(label, mutate) {
+        if (groupDepth > 0) { mutate(); return false; }
+        groupDepth++;
+        try {
+            flushCoalesce();
+            mutate();
+        } finally { groupDepth--; }
+        queueSave();
+        return pushStep(label);
+    }
+
+    /**
+     * Typing fires far too often to record each keystroke. A burst is held
+     * open and folded into a single step once it goes quiet, so a slider
+     * drag or a headline rewrite undoes as one action.
+     */
+    function coalesce(label) {
+        coalesceLabel = label;
+        clearTimeout(coalesceTimer);
+        coalesceTimer = setTimeout(() => {
+            coalesceTimer = null;
+            pushStep(coalesceLabel);
+            coalesceLabel = null;
+        }, 800);
+    }
+
+    function flushCoalesce() {
+        if (!coalesceTimer) return;
+        clearTimeout(coalesceTimer);
+        coalesceTimer = null;
+        pushStep(coalesceLabel);
+        coalesceLabel = null;
+    }
+
+    function undo() {
+        flushCoalesce();
+        if (undoStack.index <= 0) return;
+        undoStack.index--;
+        restoreStep();
+    }
+
+    function redo() {
+        flushCoalesce();
+        if (undoStack.index >= undoStack.steps.length - 1) return;
+        undoStack.index++;
+        restoreStep();
+    }
+
+    function restoreStep() {
+        const step = undoStack.steps[undoStack.index];
+        if (!step) return;
+        blocks = JSON.parse(JSON.stringify(step.blocks));
+        // The block the user was on may not have survived the trip.
+        selectedId = locate(step.selectedId) ? step.selectedId : null;
+        activeColumn = step.activeColumn;
+        renderCanvas();
+        renderPanel();
+        refreshMissingPreviews();
+        queueSave();
+        updateHistoryButtons();
+    }
+
+    /** A block snapshotted before its preview landed would restore as an empty shell. */
+    function refreshMissingPreviews(list) {
+        (list || blocks).forEach((b) => {
+            if (!b.html) refreshPreview(b);
+            if (b.children && b.children.length) refreshMissingPreviews(b.children);
+        });
+    }
+
     // --- Palette -----------------------------------------------------------
     function renderPalette() {
         const groups = {};
@@ -369,34 +500,37 @@
         const loc = locate(id);
         if (!loc) return;
         const list = loc.list;
+        const labels = { up: 'Moved up', down: 'Moved down', dup: 'Duplicated', del: 'Deleted' };
 
-        if (act === 'up' || act === 'down') {
-            // Step within the column the block sits in, so a sibling in
-            // another column doesn't get shuffled past it.
-            const col = Number(loc.block.column) || 0;
-            const steps = list
-                .map((b, i) => ((Number(b.column) || 0) === col ? i : -1))
-                .filter((i) => i >= 0);
-            const at = steps.indexOf(loc.index);
-            const to = at + (act === 'up' ? -1 : 1);
+        const changed = commit(labels[act] || 'Edited', () => {
+            if (act === 'up' || act === 'down') {
+                // Step within the column the block sits in, so a sibling in
+                // another column doesn't get shuffled past it.
+                const col = Number(loc.block.column) || 0;
+                const steps = list
+                    .map((b, i) => ((Number(b.column) || 0) === col ? i : -1))
+                    .filter((i) => i >= 0);
+                const at = steps.indexOf(loc.index);
+                const to = at + (act === 'up' ? -1 : 1);
 
-            if (to >= 0 && to < steps.length) {
-                const a = loc.index;
-                const b = steps[to];
-                [list[a], list[b]] = [list[b], list[a]];
+                if (to >= 0 && to < steps.length) {
+                    const a = loc.index;
+                    const b = steps[to];
+                    [list[a], list[b]] = [list[b], list[a]];
+                }
+            } else if (act === 'dup') {
+                const copy = cloneBlock(loc.block);
+                list.splice(loc.index + 1, 0, copy);
+                selectedId = copy.id;
+            } else if (act === 'del') {
+                list.splice(loc.index, 1);
+                if (!locate(selectedId)) selectedId = null;
             }
-        } else if (act === 'dup') {
-            const copy = cloneBlock(loc.block);
-            list.splice(loc.index + 1, 0, copy);
-            selectedId = copy.id;
-        } else if (act === 'del') {
-            list.splice(loc.index, 1);
-            if (!locate(selectedId)) selectedId = null;
-            renderPanel();
-        }
+        });
 
+        if (!changed) return;
         renderCanvas();
-        queueSave();
+        if (act === 'del') renderPanel();
     }
 
     // --- Drag to reorder ---------------------------------------------------
@@ -416,6 +550,8 @@
     canvas.addEventListener('dragstart', (e) => {
         const wrap = e.target.closest('.pb-canvas-block');
         if (!wrap) return;
+        // A pending keystroke burst must not be folded into the move.
+        flushCoalesce();
         dragId = wrap.dataset.id;
         wrap.classList.add('is-dragging');
         e.dataTransfer.effectAllowed = 'move';
@@ -463,53 +599,51 @@
         dragId = null;
         if (!dragged) return;
 
-        const slot = e.target.closest('[data-pb-col]');
-        const wrap = e.target.closest('.pb-canvas-block');
+        // One gesture, one step — however many splices it takes.
+        withGroup('Moved', () => {
+            const slot = e.target.closest('[data-pb-col]');
+            const wrap = e.target.closest('.pb-canvas-block');
 
-        // Drop into a column: append after whatever already sits there.
-        if (slot && (!wrap || !slot.contains(wrap))) {
-            const owner = slot.closest('.pb-canvas-block');
-            const ownerId = owner && owner.dataset.id;
-            if (!ownerId || isBlockedTarget(ownerId, dragged)) return;
-            const ownerLoc = locate(ownerId);
-            if (!ownerLoc) return;
+            // Drop into a column: append after whatever already sits there.
+            if (slot && (!wrap || !slot.contains(wrap))) {
+                const owner = slot.closest('.pb-canvas-block');
+                const ownerId = owner && owner.dataset.id;
+                if (!ownerId || isBlockedTarget(ownerId, dragged)) return;
+                const ownerLoc = locate(ownerId);
+                if (!ownerLoc) return;
 
-            const column = Number(slot.dataset.pbCol) || 0;
+                const column = Number(slot.dataset.pbCol) || 0;
+                const moved = dragged.list.splice(dragged.index, 1)[0];
+                moved.column = column;
+
+                const kids = ownerLoc.block.children || (ownerLoc.block.children = []);
+                let at = kids.length;
+                kids.forEach((c, i) => { if ((Number(c.column) || 0) === column) at = i + 1; });
+                kids.splice(at, 0, moved);
+                renderCanvas();
+                return;
+            }
+
+            if (!wrap || wrap.dataset.id === dragId) return;
+            if (isBlockedTarget(wrap.dataset.id, dragged)) return;
+            if (!locate(wrap.dataset.id)) return;
+
+            const rect = wrap.getBoundingClientRect();
+            const before = (e.clientY - rect.top) < rect.height / 2;
+
+            // Splice first, then re-locate: removing the block shifts the target's
+            // index whenever the two share a list.
             const moved = dragged.list.splice(dragged.index, 1)[0];
-            moved.column = column;
+            const landed = locate(wrap.dataset.id);
+            if (!landed) { dragged.list.splice(dragged.index, 0, moved); return; }
 
-            const kids = ownerLoc.block.children || (ownerLoc.block.children = []);
-            let at = kids.length;
-            kids.forEach((c, i) => { if ((Number(c.column) || 0) === column) at = i + 1; });
-            kids.splice(at, 0, moved);
-            afterDragChange();
-            return;
-        }
+            if (landed.parent) moved.column = Number(landed.block.column) || 0;
+            else delete moved.column;
 
-        if (!wrap || wrap.dataset.id === dragId) return;
-        if (isBlockedTarget(wrap.dataset.id, dragged)) return;
-        if (!locate(wrap.dataset.id)) return;
-
-        const rect = wrap.getBoundingClientRect();
-        const before = (e.clientY - rect.top) < rect.height / 2;
-
-        // Splice first, then re-locate: removing the block shifts the target's
-        // index whenever the two share a list.
-        const moved = dragged.list.splice(dragged.index, 1)[0];
-        const landed = locate(wrap.dataset.id);
-        if (!landed) { dragged.list.splice(dragged.index, 0, moved); return; }
-
-        if (landed.parent) moved.column = Number(landed.block.column) || 0;
-        else delete moved.column;
-
-        landed.list.splice(landed.index + (before ? 0 : 1), 0, moved);
-        afterDragChange();
+            landed.list.splice(landed.index + (before ? 0 : 1), 0, moved);
+            renderCanvas();
+        });
     });
-
-    function afterDragChange() {
-        renderCanvas();
-        queueSave();
-    }
 
     canvas.addEventListener('dragend', () => {
         clearDropMarks();
@@ -551,9 +685,12 @@
             if (container) block.children = [];
             if (target.column !== undefined) block.column = target.column;
 
-            target.list.splice(target.index, 0, block);
-            activeColumn = target.column === undefined ? 0 : target.column;
-            selectedId = block.id;
+            commit('Added section', () => {
+                target.list.splice(target.index, 0, block);
+                activeColumn = target.column === undefined ? 0 : target.column;
+                selectedId = block.id;
+            });
+
             if (target.flattened) flash('Section added to the page — nesting limit reached.');
 
             renderCanvas();
@@ -726,6 +863,7 @@
             if (key === 'columns') renderPanel();
         }
 
+        coalesce('Edited ' + ((paletteByName[block.widget] || {}).title || block.widget));
         queuePreview(block);
         queueSave();
     }
@@ -765,20 +903,22 @@
             const schemaCtrl = schemaCache[block.widget].controls.find((c) => c.key === repKey);
             const rowDefaults = {};
             (schemaCtrl.fields || []).forEach((f) => { rowDefaults[f.key] = f.default ?? (f.type === 'number' ? 0 : ''); });
-            block.settings[repKey] = block.settings[repKey] || [];
-            block.settings[repKey].push(rowDefaults);
+            commit('Added item', () => {
+                block.settings[repKey] = block.settings[repKey] || [];
+                block.settings[repKey].push(rowDefaults);
+            });
             renderPanel();
             queuePreview(block);
-            queueSave();
         } else if (removeBtn) {
             const wrapper = removeBtn.closest('[data-control="repeater"]');
             const repKey = wrapper.dataset.key;
             const rowEl = removeBtn.closest('[data-row]');
             const ri = parseInt(rowEl.dataset.row, 10);
-            (block.settings[repKey] || []).splice(ri, 1);
+            commit('Removed item', () => {
+                (block.settings[repKey] || []).splice(ri, 1);
+            });
             renderPanel();
             queuePreview(block);
-            queueSave();
         }
     });
 
@@ -801,16 +941,17 @@
             // Write the path back into settings.
             const sub = pathInput.dataset.sub;
             const key = pathInput.dataset.key;
-            if (sub) {
-                const wrapper = pathInput.closest('[data-control="repeater"]');
-                const repKey = wrapper?.dataset.key;
-                const ri = parseInt(pathInput.closest('[data-row]')?.dataset.row ?? '-1', 10);
-                if (repKey && ri >= 0) block.settings[repKey][ri][sub] = data.path || '';
-            } else if (key) {
-                block.settings[key] = data.path || '';
-            }
+            commit('Uploaded image', () => {
+                if (sub) {
+                    const wrapper = pathInput.closest('[data-control="repeater"]');
+                    const repKey = wrapper?.dataset.key;
+                    const ri = parseInt(pathInput.closest('[data-row]')?.dataset.row ?? '-1', 10);
+                    if (repKey && ri >= 0) block.settings[repKey][ri][sub] = data.path || '';
+                } else if (key) {
+                    block.settings[key] = data.path || '';
+                }
+            });
             queuePreview(block);
-            queueSave();
         } catch (_) { /* ignore */ }
     });
 
@@ -855,9 +996,27 @@
 
     document.getElementById('pb-save').addEventListener('click', save);
 
+    // --- Undo / redo -------------------------------------------------------
+    document.getElementById('pb-undo').addEventListener('click', undo);
+    document.getElementById('pb-redo').addEventListener('click', redo);
+
+    document.addEventListener('keydown', (e) => {
+        // Inside a field the browser's own text undo is the right answer.
+        const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
+        if (typing || !(e.metaKey || e.ctrlKey)) return;
+
+        const key = e.key.toLowerCase();
+        if (key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+        else if (key === 'y') { e.preventDefault(); redo(); }
+    });
+
     // --- Boot --------------------------------------------------------------
     renderPalette();
     renderCanvas();
+    // Seed the stack so the first undo has somewhere to go.
+    undoStack.steps.push(Object.assign(snapshot(), { label: 'Opened' }));
+    undoStack.index = 0;
+    updateHistoryButtons();
 })();
 </script>
 @endpush
