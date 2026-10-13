@@ -65,7 +65,7 @@
         .pb-history button:not([disabled]):hover { border-color: var(--color-accent); color: var(--color-accent); }
         /* Both overlays below are flex containers, so the `hidden` attribute
            needs a rule of its own to actually hide them. */
-        .pb-toast[hidden], .pb-help[hidden] { display: none; }
+        .pb-toast[hidden], .pb-help[hidden], .pb-menu[hidden] { display: none; }
         .pb-toast {
             position: fixed; right: 24px; bottom: 24px; z-index: 50;
             display: flex; align-items: center; gap: 16px;
@@ -74,6 +74,23 @@
         }
         .pb-toast button { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--color-accent); }
         .pb-toast button:hover { text-decoration: underline; }
+        /* Right-click menu. Every row is drawn from the shortcut table, so
+           the key that does the same job is printed beside it. */
+        .pb-menu {
+            position: fixed; z-index: 55;
+            /* max-content keeps the key column from being squeezed when the
+               menu opens hard against the right edge, where a shrink-to-fit
+               box would otherwise run out of room and wrap its rows. */
+            width: max-content; min-width: 250px;
+            padding: 6px; border: 1px solid var(--color-line); background: var(--color-surface);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, .6);
+        }
+        .pb-menu button {
+            display: flex; align-items: center; justify-content: space-between; gap: 28px;
+            width: 100%; padding: 8px 10px; font-size: 12px; color: var(--color-body); text-align: left;
+        }
+        .pb-menu button:hover, .pb-menu button:focus-visible { background: rgba(217, 4, 41, .12); color: #fff; outline: none; }
+        .pb-menu kbd { font-family: var(--font-display); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--color-muted); }
         .pb-help { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .65); }
         .pb-help__panel { width: min(440px, 92vw); border: 1px solid var(--color-line); background: var(--color-surface); padding: 20px; }
         .pb-help__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--color-line); }
@@ -158,6 +175,9 @@
     <span id="pb-toast-msg"></span>
     <button type="button" id="pb-toast-action" hidden></button>
 </div>
+
+{{-- Right-click menu, rendered straight from the same shortcut table --}}
+<div id="pb-menu" class="pb-menu" hidden></div>
 
 {{-- Shortcut sheet, rendered straight from the shortcut table --}}
 <div id="pb-help" class="pb-help" hidden>
@@ -1134,7 +1154,15 @@
     /** The selection is only real while the block is still in the tree. */
     const selectedBlock = () => (selectedId && locate(selectedId) ? selectedId : null);
 
+    /**
+     * The predicate shared by every block-scoped action, compared by identity
+     * rather than by behaviour. That lets the right-click menu select exactly
+     * the entries which act on the selection — no second list to keep in step.
+     */
+    const onSelection = () => !!selectedBlock();
+
     function toggleHelp() {
+        closeContextMenu();
         const el = document.getElementById('pb-help');
         if (!el.hidden) { el.hidden = true; return; }
         document.getElementById('pb-help-rows').innerHTML = shortcuts.map((s) => `
@@ -1151,15 +1179,22 @@
         const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
         if (typing && !e[modKey] && !e.ctrlKey && !e.metaKey) return;
         e.preventDefault();
+        // The menu is a transient affordance, and the tree can change under it
+        // the moment an action runs — so any key that acts dismisses it too.
+        closeContextMenu();
         s.run();
     });
 
     shortcut('mod+z', 'Undo', null, undo);
     shortcut('mod+shift+z', 'Redo', null, redo);
     shortcut('mod+y', 'Redo', null, redo);
-    shortcut('delete', 'Delete selected block', () => !!selectedBlock(), () => handleAction(selectedBlock(), 'del'));
-    shortcut('backspace', 'Delete selected block', () => !!selectedBlock(), () => handleAction(selectedBlock(), 'del'));
-    shortcut('mod+d', 'Duplicate selected block', () => !!selectedBlock(), () => handleAction(selectedBlock(), 'dup'));
+    shortcut('delete', 'Delete selected block', onSelection, () => handleAction(selectedBlock(), 'del'));
+    shortcut('backspace', 'Delete selected block', onSelection, () => handleAction(selectedBlock(), 'del'));
+    shortcut('mod+d', 'Duplicate selected block', onSelection, () => handleAction(selectedBlock(), 'dup'));
+    // `matchShortcut` lowercases every combo, so the casing here only decides
+    // how the key is spelled in the help sheet and the right-click menu.
+    shortcut('alt+ArrowUp', 'Move block up', onSelection, () => handleAction(selectedBlock(), 'up'));
+    shortcut('alt+ArrowDown', 'Move block down', onSelection, () => handleAction(selectedBlock(), 'down'));
     shortcut('?', 'Show this sheet', null, toggleHelp);
     shortcut('escape', 'Close this sheet', () => !document.getElementById('pb-help').hidden, toggleHelp);
 
@@ -1169,6 +1204,106 @@
             document.getElementById('pb-help').hidden = true;
         }
     });
+
+    // --- Right-click menu ---------------------------------------------------
+    // Every row is drawn from the shortcut table by the shared selection
+    // predicate, so the menu cannot offer an action the keyboard cannot also
+    // do, and cannot drift away from the help sheet.
+    const menu = document.getElementById('pb-menu');
+    let menuRows = [];
+
+    function closeContextMenu() {
+        menu.hidden = true;
+        menuRows = [];
+    }
+
+    function openContextMenu(x, y) {
+        // Several keys can drive one action (Delete and Backspace both delete).
+        // The help sheet lists every binding because it documents keys; this
+        // menu documents actions, so each one appears once, under the key it
+        // is listed with first.
+        const seen = new Set();
+        const rows = shortcuts.filter((s) => {
+            if (s.when !== onSelection || !s.when()) return false;
+            if (seen.has(s.title)) return false;
+            seen.add(s.title);
+            return true;
+        });
+
+        // Nothing is selected, so there is nothing worth offering.
+        if (!rows.length) { closeContextMenu(); return; }
+
+        menuRows = rows;
+        menu.innerHTML = rows.map((s, i) => `
+            <button type="button" data-menu-row="${i}">
+                <span>${esc(s.title)}</span>
+                <kbd>${esc(comboLabel(s.combo))}</kbd>
+            </button>`).join('');
+
+        menu.hidden = false;
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        clampMenu();
+        // The panel can grow once the display web font swaps in, after the
+        // first measurement, so clamp again when layout has settled and
+        // whenever the window changes size.
+        requestAnimationFrame(clampMenu);
+        if (document.fonts) document.fonts.ready.then(clampMenu);
+        menu.querySelector('button').focus({ preventScroll: true });
+    }
+
+    /**
+     * Pull the menu back inside the viewport. Written as a delta against its
+     * own rect rather than as an absolute reposition, so calling it again
+     * after a resize or a font swap can never move a menu that is already
+     * where it should be.
+     */
+    function clampMenu() {
+        if (menu.hidden) return;
+        const box = menu.getBoundingClientRect();
+        const dx = Math.min(0, window.innerWidth - box.right - 8) + Math.max(0, 8 - box.left);
+        const dy = Math.min(0, window.innerHeight - box.bottom - 8) + Math.max(0, 8 - box.top);
+        if (dx) menu.style.left = (box.left + dx) + 'px';
+        if (dy) menu.style.top = (box.top + dy) + 'px';
+    }
+
+    canvas.addEventListener('contextmenu', (e) => {
+        const wrap = e.target.closest('.pb-canvas-block');
+        // Only the canvas swallows the native menu. The rest of the admin
+        // keeps it — taking "Inspect element" away from a developer helps
+        // nobody.
+        if (!wrap) return;
+        e.preventDefault();
+
+        // Right-clicking a different block moves the selection with it.
+        const id = wrap.dataset.id;
+        if (id !== selectedId) selectBlock(id);
+
+        openContextMenu(e.clientX, e.clientY);
+    });
+
+    menu.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-menu-row]');
+        if (!btn) return;
+        const row = menuRows[Number(btn.dataset.menuRow)];
+        closeContextMenu();
+        if (row) row.run();
+    });
+
+    // Anything that isn't the menu itself dismisses it.
+    document.addEventListener('click', (e) => {
+        if (!menu.hidden && !e.target.closest('#pb-menu')) closeContextMenu();
+    });
+    document.addEventListener('scroll', () => { if (!menu.hidden) closeContextMenu(); }, true);
+    window.addEventListener('resize', clampMenu);
+    document.addEventListener('keydown', (e) => {
+        // Capture phase, so Escape reaches the menu before the shortcut layer
+        // claims it for the help sheet.
+        if (!menu.hidden && e.key === 'Escape') {
+            e.stopPropagation();
+            closeContextMenu();
+        }
+    }, true);
 
     // --- Boot --------------------------------------------------------------
     renderPalette();
