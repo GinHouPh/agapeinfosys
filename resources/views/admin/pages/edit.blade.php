@@ -65,7 +65,7 @@
         .pb-history button:not([disabled]):hover { border-color: var(--color-accent); color: var(--color-accent); }
         /* Both overlays below are flex containers, so the `hidden` attribute
            needs a rule of its own to actually hide them. */
-        .pb-toast[hidden], .pb-help[hidden], .pb-menu[hidden] { display: none; }
+        .pb-toast[hidden], .pb-help[hidden], .pb-menu[hidden], .pb-tree[hidden] { display: none; }
         .pb-toast {
             position: fixed; right: 24px; bottom: 24px; z-index: 50;
             display: flex; align-items: center; gap: 16px;
@@ -77,7 +77,7 @@
         /* Right-click menu. Every row is drawn from the shortcut table, so
            the key that does the same job is printed beside it. */
         .pb-menu {
-            position: fixed; z-index: 55;
+            position: fixed; z-index: 57;
             /* max-content keeps the key column from being squeezed when the
                menu opens hard against the right edge, where a shrink-to-fit
                box would otherwise run out of room and wrap its rows. */
@@ -91,6 +91,32 @@
         }
         .pb-menu button:hover, .pb-menu button:focus-visible { background: rgba(217, 4, 41, .12); color: #fff; outline: none; }
         .pb-menu kbd { font-family: var(--font-display); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--color-muted); }
+        /* Structure drawer. Read-only by design — reordering already lives on
+           the canvas and in the right-click menu, and this exists to make
+           nesting legible rather than to become a second place to edit it. */
+        .pb-tree {
+            position: fixed; top: 0; left: 0; bottom: 0; z-index: 56;
+            display: flex; flex-direction: column;
+            width: min(320px, 88vw);
+            background: var(--color-surface); border-right: 1px solid var(--color-line);
+            box-shadow: 0 0 60px rgba(0, 0, 0, .55);
+        }
+        .pb-tree__head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px; border-bottom: 1px solid var(--color-line);
+        }
+        .pb-tree__head button { color: var(--color-muted); font-size: 20px; line-height: 1; }
+        .pb-tree__head button:hover { color: var(--color-accent); }
+        .pb-tree__rows { flex: 1; overflow-y: auto; padding: 8px 0; }
+        .pb-tree__row {
+            display: flex; align-items: center; gap: 8px;
+            width: 100%; padding: 7px 16px; font-size: 12px;
+            color: var(--color-body); text-align: left;
+            border-left: 2px solid transparent;
+        }
+        .pb-tree__row:hover { background: rgba(255, 255, 255, .05); color: #fff; }
+        .pb-tree__row.is-current { border-left-color: var(--color-accent); background: rgba(217, 4, 41, .10); color: #fff; }
+        .pb-tree__empty { padding: 12px 16px; font-size: 12px; color: var(--color-muted); }
         .pb-help { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .65); }
         .pb-help__panel { width: min(440px, 92vw); border: 1px solid var(--color-line); background: var(--color-surface); padding: 20px; }
         .pb-help__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--color-line); }
@@ -121,6 +147,7 @@
             <button type="button" id="pb-undo" class="tag" title="Undo (Ctrl+Z)" disabled>&#8630;</button>
             <button type="button" id="pb-redo" class="tag" title="Redo (Ctrl+Shift+Z)" disabled>&#8631;</button>
             <button type="button" id="pb-help-open" class="tag" title="Keyboard shortcuts">?</button>
+            <button type="button" id="pb-tree-open" class="tag" title="Page structure (Ctrl+Alt+O)">&#9776;</button>
         </div>
         <span id="pb-save-status" class="text-xs text-muted"></span>
         <button type="button" id="pb-save" class="btn btn--accent">
@@ -178,6 +205,15 @@
 
 {{-- Right-click menu, rendered straight from the same shortcut table --}}
 <div id="pb-menu" class="pb-menu" hidden></div>
+
+{{-- Structure drawer: nesting reads as flat on a canvas stacked on a canvas --}}
+<aside id="pb-tree" class="pb-tree" hidden>
+    <div class="pb-tree__head">
+        <span class="font-display text-xs tracking-[0.24em] text-white uppercase">Page structure</span>
+        <button type="button" data-close aria-label="Close">&times;</button>
+    </div>
+    <div id="pb-tree-rows" class="pb-tree__rows"></div>
+</aside>
 
 {{-- Shortcut sheet, rendered straight from the shortcut table --}}
 <div id="pb-help" class="pb-help" hidden>
@@ -510,8 +546,51 @@
         return data;
     }
 
+    // --- Structure drawer --------------------------------------------------
+    // Read-only on purpose. Reordering already lives on the canvas and in the
+    // right-click menu; three levels of sections still read as flat when all
+    // you can see is one canvas stacked on another, and this exists to make
+    // the shape of the page legible — not to become a second place to edit it.
+    const treeEl = document.getElementById('pb-tree');
+
+    function renderTree() {
+        const rows = [];
+        (function walk(list, depth) {
+            for (const b of list) {
+                rows.push(
+                    `<button type="button" class="pb-tree__row${b.id === selectedId ? ' is-current' : ''}"` +
+                    ` data-tree-id="${esc(b.id)}" style="padding-left:${16 + depth * 14}px">` +
+                    `${esc(widgetTitle(b.widget))}</button>`
+                );
+                if (b.children && b.children.length) walk(b.children, depth + 1);
+            }
+        })(blocks, 0);
+
+        document.getElementById('pb-tree-rows').innerHTML = rows.length
+            ? rows.join('')
+            : '<p class="pb-tree__empty">Nothing on this page yet.</p>';
+    }
+
+    function toggleTree() {
+        treeEl.hidden = !treeEl.hidden;
+        if (!treeEl.hidden) renderTree();
+    }
+
+    treeEl.addEventListener('click', (e) => {
+        if (e.target.closest('[data-close]')) { treeEl.hidden = true; return; }
+        const row = e.target.closest('[data-tree-id]');
+        // Jumping to a section, nothing more: the drawer stays open so the
+        // whole page can be walked without reopening it each time.
+        if (row) selectBlock(row.dataset.treeId);
+    });
+
     // --- Canvas ------------------------------------------------------------
     function renderCanvas() {
+        // The drawer reads the same tree, so it is kept in step here rather
+        // than at every call site — including the empty-page path below,
+        // which returns early.
+        renderTree();
+
         const total = countBlocks();
         countEl.textContent = total === 1 ? '1 section' : `${total} sections`;
         if (blocks.length === 0) {
@@ -1289,10 +1368,12 @@
     shortcut('alt+ArrowDown', 'Move block down', onSelection, () => handleAction(selectedBlock(), 'down'));
     shortcut('delete', 'Delete selected block', onSelection, () => handleAction(selectedBlock(), 'del'));
     shortcut('backspace', 'Delete selected block', onSelection, () => handleAction(selectedBlock(), 'del'));
+    shortcut('mod+alt+o', 'Toggle page structure', null, toggleTree);
     shortcut('?', 'Show this sheet', null, toggleHelp);
     shortcut('escape', 'Close this sheet', () => !document.getElementById('pb-help').hidden, toggleHelp);
 
     document.getElementById('pb-help-open').addEventListener('click', toggleHelp);
+    document.getElementById('pb-tree-open').addEventListener('click', toggleTree);
     document.getElementById('pb-help').addEventListener('click', (e) => {
         if (e.target.id === 'pb-help' || e.target.closest('[data-close]')) {
             document.getElementById('pb-help').hidden = true;
@@ -1397,12 +1478,12 @@
     document.addEventListener('scroll', () => { if (!menu.hidden) closeContextMenu(); }, true);
     window.addEventListener('resize', clampMenu);
     document.addEventListener('keydown', (e) => {
-        // Capture phase, so Escape reaches the menu before the shortcut layer
-        // claims it for the help sheet.
-        if (!menu.hidden && e.key === 'Escape') {
-            e.stopPropagation();
-            closeContextMenu();
-        }
+        if (e.key !== 'Escape') return;
+        // Capture phase, so Escape unwinds one layer at a time — the
+        // right-click menu first, the structure drawer next — before the
+        // shortcut layer claims it for the help sheet.
+        if (!menu.hidden) { e.stopPropagation(); closeContextMenu(); return; }
+        if (!treeEl.hidden) { e.stopPropagation(); treeEl.hidden = true; }
     }, true);
 
     // --- Boot --------------------------------------------------------------
