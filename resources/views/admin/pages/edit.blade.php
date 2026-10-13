@@ -232,6 +232,7 @@
     const paletteByName = {};
     palette.forEach((w) => { paletteByName[w.name] = w; });
     const isContainer = (name) => !!(paletteByName[name] && paletteByName[name].container);
+    const widgetTitle = (name) => (paletteByName[name] || {}).title || name;
     const maxDepth = Number(meta.maxDepth) || 3;
 
     /** Rebuild a node from the server's tree, giving containers a children list. */
@@ -587,7 +588,7 @@
         if (!loc) return;
         const list = loc.list;
         const labels = { up: 'Moved up', down: 'Moved down', dup: 'Duplicated', del: 'Deleted' };
-        const title = (paletteByName[loc.block.widget] || {}).title || loc.block.widget;
+        const title = widgetTitle(loc.block.widget);
 
         const changed = commit(labels[act] || 'Edited', () => {
             if (act === 'up' || act === 'down') {
@@ -622,6 +623,80 @@
             // Undo is the safety net, so delete never asks first.
             toast(title + ' deleted', 'Undo', undo);
         }
+    }
+
+    // --- Clipboard ----------------------------------------------------------
+    /**
+     * Held in memory only, like the undo stack. The tree is already the
+     * durable copy once it saves, and a block carries `html` the server
+     * rendered — parking that in `localStorage` would give anyone who can
+     * write to this origin a way to inject markup the save path never saw.
+     */
+    let clipboard = null;
+
+    /** How tall `block` stands, counting its own root as 0. */
+    function subtreeDepth(block) {
+        if (!isContainer(block.widget)) return 0;
+        const kids = block.children || [];
+        if (!kids.length) return 0;
+        return 1 + Math.max.apply(null, kids.map(subtreeDepth));
+    }
+
+    function copyBlock() {
+        const loc = locate(selectedBlock());
+        if (!loc) return;
+        clipboard = cloneBlock(loc.block);
+        flash(widgetTitle(loc.block.widget) + ' copied');
+    }
+
+    /** Copy and remove together, so one undo puts the block back. */
+    function cutBlock() {
+        const loc = locate(selectedBlock());
+        if (!loc) return;
+
+        clipboard = cloneBlock(loc.block);
+        const title = widgetTitle(loc.block.widget);
+
+        const changed = commit('Cut section', () => {
+            loc.list.splice(loc.index, 1);
+            if (!locate(selectedId)) selectedId = null;
+        });
+        if (!changed) return;
+
+        renderCanvas();
+        renderPanel();
+        // Undo is the safety net, so cutting never asks first either.
+        toast(title + ' cut', 'Undo', undo);
+    }
+
+    function pasteBlock() {
+        if (!clipboard) { flash('Nothing copied yet'); return; }
+
+        // Re-clone on every paste: `cloneBlock` mints fresh ids throughout,
+        // so the same block can land on the page twice without colliding.
+        const copy = cloneBlock(clipboard);
+        let target = insertTarget(isContainer(copy.widget));
+
+        // `insertTarget` only knows how deep the insertion point is, not how
+        // tall the thing being inserted is — a copied section can carry
+        // children of its own. When the two together outrun the budget, drop
+        // it at the page root rather than let the sanitizer trip over it.
+        if (target.depth + subtreeDepth(copy) > maxDepth - 1) {
+            target = { list: blocks, index: blocks.length, depth: 0, flattened: true };
+        }
+        if (target.column !== undefined) copy.column = target.column;
+        else delete copy.column;
+
+        const changed = commit('Pasted section', () => {
+            target.list.splice(target.index, 0, copy);
+            activeColumn = target.column === undefined ? 0 : target.column;
+            selectedId = copy.id;
+        });
+        if (!changed) return;
+
+        renderCanvas();
+        renderPanel();
+        if (target.flattened) flash('Section added to the page — nesting limit reached.');
     }
 
     // --- Drag to reorder ---------------------------------------------------
@@ -1155,11 +1230,26 @@
     const selectedBlock = () => (selectedId && locate(selectedId) ? selectedId : null);
 
     /**
+     * True while a text field owns the keyboard. Read live from
+     * `document.activeElement` rather than taken from the event, because the
+     * right-click menu asks the same question long after the last keystroke.
+     */
+    const typingInField = () => {
+        const el = document.activeElement;
+        return !!el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable);
+    };
+
+    /**
      * The predicate shared by every block-scoped action, compared by identity
      * rather than by behaviour. That lets the right-click menu select exactly
      * the entries which act on the selection — no second list to keep in step.
+     *
+     * It also stands down while a field is focused. Copy, cut and paste are
+     * the only shortcuts here that a text field genuinely needs, and the
+     * handler lets modifier combinations through — without this they would
+     * move the selected block instead of the selected text.
      */
-    const onSelection = () => !!selectedBlock();
+    const onSelection = () => !!selectedBlock() && !typingInField();
 
     function toggleHelp() {
         closeContextMenu();
@@ -1174,8 +1264,9 @@
         const s = matchShortcut(e);
         if (!s || !s.when()) return;
         // A focused field owns the plain keys, so Delete can't eat a
-        // keystroke mid-word. Modifier combos still win, because document
-        // history is the more useful undo once a block edit has been made.
+        // keystroke mid-word. Modifier combos still win — undo and redo have
+        // no `when` of their own, and the block-scoped ones stand down
+        // because `onSelection` checks the same thing.
         const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
         if (typing && !e[modKey] && !e.ctrlKey && !e.metaKey) return;
         e.preventDefault();
@@ -1188,13 +1279,16 @@
     shortcut('mod+z', 'Undo', null, undo);
     shortcut('mod+shift+z', 'Redo', null, redo);
     shortcut('mod+y', 'Redo', null, redo);
-    shortcut('delete', 'Delete selected block', onSelection, () => handleAction(selectedBlock(), 'del'));
-    shortcut('backspace', 'Delete selected block', onSelection, () => handleAction(selectedBlock(), 'del'));
-    shortcut('mod+d', 'Duplicate selected block', onSelection, () => handleAction(selectedBlock(), 'dup'));
     // `matchShortcut` lowercases every combo, so the casing here only decides
     // how the key is spelled in the help sheet and the right-click menu.
+    shortcut('mod+c', 'Copy selected block', onSelection, copyBlock);
+    shortcut('mod+x', 'Cut selected block', onSelection, cutBlock);
+    shortcut('mod+v', 'Paste copied block', onSelection, pasteBlock);
+    shortcut('mod+d', 'Duplicate selected block', onSelection, () => handleAction(selectedBlock(), 'dup'));
     shortcut('alt+ArrowUp', 'Move block up', onSelection, () => handleAction(selectedBlock(), 'up'));
     shortcut('alt+ArrowDown', 'Move block down', onSelection, () => handleAction(selectedBlock(), 'down'));
+    shortcut('delete', 'Delete selected block', onSelection, () => handleAction(selectedBlock(), 'del'));
+    shortcut('backspace', 'Delete selected block', onSelection, () => handleAction(selectedBlock(), 'del'));
     shortcut('?', 'Show this sheet', null, toggleHelp);
     shortcut('escape', 'Close this sheet', () => !document.getElementById('pb-help').hidden, toggleHelp);
 
@@ -1278,6 +1372,12 @@
         // Right-clicking a different block moves the selection with it.
         const id = wrap.dataset.id;
         if (id !== selectedId) selectBlock(id);
+
+        // And it releases whatever field had focus. Without this, a panel
+        // input still holding focus would leave `onSelection` declining every
+        // row, so right-clicking the block you are already editing would open
+        // nothing at all.
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 
         openContextMenu(e.clientX, e.clientY);
     });
