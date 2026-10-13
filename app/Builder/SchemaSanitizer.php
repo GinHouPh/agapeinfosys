@@ -151,6 +151,7 @@ class SchemaSanitizer
             'number' => is_numeric($value) ? $value + 0 : 0,
             'toggle' => filter_var($value, FILTER_VALIDATE_BOOL),
             'select' => $this->coerceSelect($control, $value),
+            'url' => $this->coerceUrl($value),
             'repeater' => $this->coerceRepeater($control, $value),
             default => is_scalar($value) ? (string) $value : '',
         };
@@ -172,6 +173,37 @@ class SchemaSanitizer
         }
 
         return (string) ($control['default'] ?? (array_key_first($options) ?? ''));
+    }
+
+    /**
+     * Drop a link whose scheme a browser cannot be trusted to navigate to.
+     *
+     * URL settings are echoed straight into href attributes on public pages,
+     * so a javascript: or data: scheme stored here would be a stored XSS that
+     * fires on click. Control characters are stripped before the scheme is
+     * read, because the URL parser discards tabs and newlines first — without
+     * that, "java\nscript:alert(1)" would sail past a prefix check.
+     *
+     * Schemeless values (a site path, an anchor, a query) carry no scheme to
+     * misuse, so they are kept exactly as authored.
+     */
+    private function coerceUrl(mixed $value): string
+    {
+        $value = is_scalar($value) ? (string) $value : '';
+        $value = preg_replace('/[\x00-\x1F\x7F]/', '', $value) ?? '';
+        $value = trim($value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/^([a-z][a-z0-9+.-]*):/i', $value, $match) !== 1) {
+            return $value;
+        }
+
+        $scheme = strtolower($match[1]);
+
+        return in_array($scheme, ['http', 'https', 'mailto', 'tel'], true) ? $value : '';
     }
 
     /**
