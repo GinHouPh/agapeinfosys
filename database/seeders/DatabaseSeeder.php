@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             ClientSeeder::class,
             CommerceSeeder::class,
             ShowcaseProjectSeeder::class,
+            RequirementFormSeeder::class,
         ]);
     }
 }

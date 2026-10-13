@@ -1,0 +1,34 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('forms', function (Blueprint $table): void {
+            $table->id();
+            $table->string('title', 160);
+            $table->string('slug', 180)->unique();
+            $table->text('description')->nullable();
+            $table->string('submit_label', 80)->default('Submit');
+            $table->string('success_message', 400)->nullable();
+            $table->string('reference_prefix', 10)->default('REQ');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('forms');
+    }
+};

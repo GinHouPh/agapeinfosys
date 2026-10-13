@@ -3,9 +3,9 @@
 namespace App\Enums;
 
 /**
- * Pipeline stage of a requirement submission.
+ * Pipeline stage of a form submission.
  */
-enum RequirementStatus: string
+enum SubmissionStatus: string
 {
     case New = 'new';
 

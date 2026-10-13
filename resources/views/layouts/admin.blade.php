@@ -30,13 +30,14 @@
                 <x-admin-link :href="route('admin.projects.index')" :active="request()->routeIs('admin.projects.*')" label="Case Studies" />
                 <x-admin-link :href="route('admin.posts.index')" :active="request()->routeIs('admin.posts.*')" label="Articles" />
                 <x-admin-link :href="route('admin.testimonials.index')" :active="request()->routeIs('admin.testimonials.*')" label="Testimonials" />
+                <x-admin-link :href="route('admin.forms.index')" :active="request()->routeIs('admin.forms.*')" label="Forms" />
 
                 <p class="px-4 pt-6 pb-2 font-display text-[11px] tracking-[0.24em] text-muted uppercase">Showcase</p>
                 <x-admin-link :href="route('admin.showcase-projects.index')" :active="request()->routeIs('admin.showcase-projects.*')" label="Projects" />
 
                 <p class="px-4 pt-6 pb-2 font-display text-[11px] tracking-[0.24em] text-muted uppercase">Inbox</p>
                 <x-admin-link :href="route('admin.messages.index')" :active="request()->routeIs('admin.messages.*')" label="Messages" />
-                <x-admin-link :href="route('admin.requirements.index')" :active="request()->routeIs('admin.requirements.*')" label="Requirements" />
+                <x-admin-link :href="route('admin.submissions.index')" :active="request()->routeIs('admin.submissions.*')" label="Submissions" />
 
                 <p class="px-4 pt-6 pb-2 font-display text-[11px] tracking-[0.24em] text-muted uppercase">Commerce</p>
                 <x-admin-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')" label="Products" />
