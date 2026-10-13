@@ -58,6 +58,25 @@
         .pb-history button { padding: 4px 9px; line-height: 1.4; transition: color .15s, border-color .15s; }
         .pb-history button[disabled] { opacity: .3; cursor: not-allowed; }
         .pb-history button:not([disabled]):hover { border-color: var(--color-accent); color: var(--color-accent); }
+        /* Both overlays below are flex containers, so the `hidden` attribute
+           needs a rule of its own to actually hide them. */
+        .pb-toast[hidden], .pb-help[hidden] { display: none; }
+        .pb-toast {
+            position: fixed; right: 24px; bottom: 24px; z-index: 50;
+            display: flex; align-items: center; gap: 16px;
+            padding: 12px 16px; border: 1px solid var(--color-line); background: var(--color-surface);
+            font-size: 12px; color: var(--color-body); box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+        }
+        .pb-toast button { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--color-accent); }
+        .pb-toast button:hover { text-decoration: underline; }
+        .pb-help { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .65); }
+        .pb-help__panel { width: min(440px, 92vw); border: 1px solid var(--color-line); background: var(--color-surface); padding: 20px; }
+        .pb-help__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--color-line); }
+        .pb-help__head button { color: var(--color-muted); font-size: 20px; line-height: 1; }
+        .pb-help__head button:hover { color: var(--color-accent); }
+        .pb-help__table { width: 100%; font-size: 12px; }
+        .pb-help__table td { padding: 7px 0; color: var(--color-body); }
+        .pb-help__table td:first-child { width: 128px; color: var(--color-accent); font-family: var(--font-display); letter-spacing: .1em; }
     </style>
 @endpush
 
@@ -79,6 +98,7 @@
         <div class="pb-history flex items-center gap-1">
             <button type="button" id="pb-undo" class="tag" title="Undo (Ctrl+Z)" disabled>&#8630;</button>
             <button type="button" id="pb-redo" class="tag" title="Redo (Ctrl+Shift+Z)" disabled>&#8631;</button>
+            <button type="button" id="pb-help-open" class="tag" title="Keyboard shortcuts">?</button>
         </div>
         <span id="pb-save-status" class="text-xs text-muted"></span>
         <button type="button" id="pb-save" class="btn btn--accent">
@@ -126,6 +146,23 @@
             <p class="text-sm text-muted">Select a section on the canvas to edit it, or add one from the palette.</p>
         </div>
     </aside>
+</div>
+
+{{-- Reversible actions announce themselves here; only irreversible ones ask --}}
+<div id="pb-toast" class="pb-toast" hidden>
+    <span id="pb-toast-msg"></span>
+    <button type="button" id="pb-toast-action" hidden></button>
+</div>
+
+{{-- Shortcut sheet, rendered straight from the shortcut table --}}
+<div id="pb-help" class="pb-help" hidden>
+    <div class="pb-help__panel">
+        <div class="pb-help__head">
+            <span class="font-display text-xs tracking-[0.24em] text-white uppercase">Keyboard shortcuts</span>
+            <button type="button" data-close aria-label="Close">&times;</button>
+        </div>
+        <table class="pb-help__table"><tbody id="pb-help-rows"></tbody></table>
+    </div>
 </div>
 
 {{-- Hidden form carrying the page meta + schema on save --}}
@@ -257,6 +294,30 @@
         saveStatus.textContent = msg;
         clearTimeout(flashTimer);
         flashTimer = setTimeout(() => { saveStatus.textContent = ''; }, 2600);
+    }
+
+    // --- Toast -------------------------------------------------------------
+    /**
+     * Reversible actions announce themselves instead of asking first. The
+     * prompt only comes back once there is nothing to undo to.
+     */
+    let toastTimer = null;
+
+    function toast(msg, actionLabel, action) {
+        const el = document.getElementById('pb-toast');
+        const btn = document.getElementById('pb-toast-action');
+        document.getElementById('pb-toast-msg').textContent = msg;
+        btn.textContent = actionLabel || '';
+        btn.hidden = !actionLabel;
+        btn.onclick = actionLabel && action ? () => { hideToast(); action(); } : null;
+        el.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(hideToast, 6000);
+    }
+
+    function hideToast() {
+        clearTimeout(toastTimer);
+        document.getElementById('pb-toast').hidden = true;
     }
 
     // --- History -----------------------------------------------------------
@@ -501,6 +562,7 @@
         if (!loc) return;
         const list = loc.list;
         const labels = { up: 'Moved up', down: 'Moved down', dup: 'Duplicated', del: 'Deleted' };
+        const title = (paletteByName[loc.block.widget] || {}).title || loc.block.widget;
 
         const changed = commit(labels[act] || 'Edited', () => {
             if (act === 'up' || act === 'down') {
@@ -530,7 +592,11 @@
 
         if (!changed) return;
         renderCanvas();
-        if (act === 'del') renderPanel();
+        if (act === 'del') {
+            renderPanel();
+            // Undo is the safety net, so delete never asks first.
+            toast(title + ' deleted', 'Undo', undo);
+        }
     }
 
     // --- Drag to reorder ---------------------------------------------------
@@ -1000,14 +1066,87 @@
     document.getElementById('pb-undo').addEventListener('click', undo);
     document.getElementById('pb-redo').addEventListener('click', redo);
 
-    document.addEventListener('keydown', (e) => {
-        // Inside a field the browser's own text undo is the right answer.
-        const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
-        if (typing || !(e.metaKey || e.ctrlKey)) return;
+    // --- Keyboard shortcuts ------------------------------------------------
+    const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent);
+    const modKey = isMac ? 'metaKey' : 'ctrlKey';
 
-        const key = e.key.toLowerCase();
-        if (key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
-        else if (key === 'y') { e.preventDefault(); redo(); }
+    /**
+     * One table for every shortcut. The help sheet is rendered straight from
+     * it, so the two can't drift apart. `mod` is Cmd on macOS, Ctrl elsewhere.
+     */
+    const shortcuts = [];
+
+    function shortcut(combo, title, when, run) {
+        shortcuts.push({ combo, title, when: when || (() => true), run });
+    }
+
+    function comboLabel(combo) {
+        const names = isMac ? { mod: '⌘', shift: '⇧', alt: '⌥' } : { mod: 'Ctrl', shift: 'Shift', alt: 'Alt' };
+        const parts = combo.split('+');
+        const key = parts.pop();
+        // Word keys read better title-cased; single letters stay shouted.
+        const label = key.length > 1
+            ? key.charAt(0).toUpperCase() + key.slice(1)
+            : (key === '?' ? '?' : key.toUpperCase());
+        return parts.map((p) => names[p] || p.toUpperCase()).concat(label).join(isMac ? '' : '+');
+    }
+
+    function matchShortcut(e) {
+        const want = e.key.toLowerCase();
+        return shortcuts.find((s) => {
+            const parts = s.combo.toLowerCase().split('+');
+            const key = parts.pop();
+            if (key !== want) return false;
+            if (parts.includes('mod') !== !!e[modKey]) return false;
+            if (parts.includes('alt') !== !!e.altKey) return false;
+
+            // `?` reaches us as Shift+/ on most layouts, so shift is only
+            // pinned for letters and digits — there e.key's case already
+            // carries it, and Ctrl+Shift+Z has to stay distinct from Ctrl+Z.
+            const wantsShift = parts.includes('shift');
+            if (/^[a-z0-9]$/.test(key) && !!e.shiftKey !== wantsShift) return false;
+            if (wantsShift && !e.shiftKey) return false;
+            return true;
+        });
+    }
+
+    /** The selection is only real while the block is still in the tree. */
+    const selectedBlock = () => (selectedId && locate(selectedId) ? selectedId : null);
+
+    function toggleHelp() {
+        const el = document.getElementById('pb-help');
+        if (!el.hidden) { el.hidden = true; return; }
+        document.getElementById('pb-help-rows').innerHTML = shortcuts.map((s) => `
+            <tr><td>${esc(comboLabel(s.combo))}</td><td>${esc(s.title)}</td></tr>`).join('');
+        el.hidden = false;
+    }
+
+    document.addEventListener('keydown', (e) => {
+        const s = matchShortcut(e);
+        if (!s || !s.when()) return;
+        // A focused field owns the plain keys, so Delete can't eat a
+        // keystroke mid-word. Modifier combos still win, because document
+        // history is the more useful undo once a block edit has been made.
+        const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
+        if (typing && !e[modKey] && !e.ctrlKey && !e.metaKey) return;
+        e.preventDefault();
+        s.run();
+    });
+
+    shortcut('mod+z', 'Undo', null, undo);
+    shortcut('mod+shift+z', 'Redo', null, redo);
+    shortcut('mod+y', 'Redo', null, redo);
+    shortcut('delete', 'Delete selected block', () => !!selectedBlock(), () => handleAction(selectedBlock(), 'del'));
+    shortcut('backspace', 'Delete selected block', () => !!selectedBlock(), () => handleAction(selectedBlock(), 'del'));
+    shortcut('mod+d', 'Duplicate selected block', () => !!selectedBlock(), () => handleAction(selectedBlock(), 'dup'));
+    shortcut('?', 'Show this sheet', null, toggleHelp);
+    shortcut('escape', 'Close this sheet', () => !document.getElementById('pb-help').hidden, toggleHelp);
+
+    document.getElementById('pb-help-open').addEventListener('click', toggleHelp);
+    document.getElementById('pb-help').addEventListener('click', (e) => {
+        if (e.target.id === 'pb-help' || e.target.closest('[data-close]')) {
+            document.getElementById('pb-help').hidden = true;
+        }
     });
 
     // --- Boot --------------------------------------------------------------
