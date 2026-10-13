@@ -22,6 +22,7 @@ abstract class GenericWidget implements Widget
      *     view: string,
      *     controls: array<int, array<string, mixed>>,
      *     section?: bool,
+     *     container?: bool,
      * }
      */
     abstract protected static function config(): array;
@@ -54,6 +55,14 @@ abstract class GenericWidget implements Widget
     public function view(): string
     {
         return static::config()['view'];
+    }
+
+    /**
+     * Whether this widget holds other blocks. Declared per widget in config.
+     */
+    public function isContainer(): bool
+    {
+        return (bool) (static::config()['container'] ?? false);
     }
 
     /**

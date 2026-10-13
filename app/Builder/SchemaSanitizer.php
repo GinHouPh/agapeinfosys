@@ -7,26 +7,50 @@ namespace App\Builder;
  *
  * Everything the builder posts is untrusted: this keeps only blocks whose
  * widget actually exists, and, per block, only settings keys the widget
- * declares — coercing each value to its control's type. Unknown widgets and
+ * declares — coercing each value to its control's type. Containers keep a
+ * bounded, recursively sanitised list of children. Unknown widgets and
  * stray keys are dropped rather than stored, so the JSON column stays clean
  * and a stored page can never smuggle data the renderer would not expect.
  */
 class SchemaSanitizer
 {
+    /**
+     * How deep the tree may nest: top level, inside a section, inside one more.
+     *
+     * Anything deeper is flattened on save, which keeps both the renderer and
+     * the canvas from walking an unbounded structure.
+     */
+    public const MAX_DEPTH = 3;
+
     public function __construct(private readonly WidgetRegistry $registry) {}
 
     /**
-     * Normalise an incoming schema to a well-formed block list.
+     * Normalise an incoming schema to a well-formed nested block list.
      *
-     * @return array{blocks: array<int, array{id: string, widget: string, settings: array<string, mixed>}>}
+     * Blocks are validated recursively: a container keeps its children only
+     * while there is nesting budget left, and every child records the column
+     * it sits in. Widgets that cannot hold children have theirs discarded.
+     *
+     * @return array{blocks: array<int, array<string, mixed>>}
      */
     public function sanitize(mixed $schema): array
     {
         $blocks = is_array($schema) ? ($schema['blocks'] ?? null) : null;
 
+        return ['blocks' => $this->sanitizeBlocks(is_array($blocks) ? $blocks : [], 0)];
+    }
+
+    /**
+     * Validate one level of the tree and recurse into containers.
+     *
+     * @param  array<array-key, mixed>  $blocks
+     * @return array<int, array<string, mixed>>
+     */
+    private function sanitizeBlocks(array $blocks, int $depth): array
+    {
         $clean = [];
 
-        foreach (is_array($blocks) ? $blocks : [] as $block) {
+        foreach ($blocks as $block) {
             if (! is_array($block)) {
                 continue;
             }
@@ -43,14 +67,37 @@ class SchemaSanitizer
                 continue;
             }
 
-            $clean[] = [
+            $entry = [
                 'id' => $this->blockId($block['id'] ?? null),
                 'widget' => $name,
                 'settings' => $this->sanitizeSettings($widget, $block['settings'] ?? []),
             ];
+
+            if ($depth > 0) {
+                $entry['column'] = $this->blockColumn($block['column'] ?? 0);
+            }
+
+            if ($widget->isContainer()) {
+                $entry['children'] = $depth + 1 < self::MAX_DEPTH
+                    ? $this->sanitizeBlocks(
+                        is_array($block['children'] ?? null) ? $block['children'] : [],
+                        $depth + 1,
+                    )
+                    : [];
+            }
+
+            $clean[] = $entry;
         }
 
-        return ['blocks' => $clean];
+        return $clean;
+    }
+
+    /**
+     * Clamp a child's column to a sane index; out-of-range falls to the first.
+     */
+    private function blockColumn(mixed $column): int
+    {
+        return is_numeric($column) ? min(max((int) $column, 0), 3) : 0;
     }
 
     /**

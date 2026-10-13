@@ -33,7 +33,11 @@ class PageRenderer
     /**
      * Render an ordered list of blocks, skipping unknown widgets.
      *
-     * @param  array<int, array{id?: string, widget?: string, settings?: array<string, mixed>}>  $blocks
+     * Container blocks (sections) render their own children first and pass
+     * the result grouped by column, so a page stays a simple list at the top
+     * level and nests only where one was deliberately placed.
+     *
+     * @param  array<int, array{id?: string, widget?: string, settings?: array<string, mixed>, children?: array<int, mixed>, column?: int}>  $blocks
      * @param  array<string, mixed>  $context
      */
     public function renderBlocks(array $blocks, array $context = []): string
@@ -47,10 +51,61 @@ class PageRenderer
                 continue;
             }
 
-            $html .= $this->renderBlock($name, $block['settings'] ?? [], $context);
+            $definition = $this->registry->get($name);
+
+            if ($definition === null) {
+                continue;
+            }
+
+            $blockContext = $context;
+
+            if ($definition->isContainer()) {
+                $blockContext['children'] = $this->renderChildren($block, $definition, $context);
+            }
+
+            $html .= $this->renderBlock($name, $block['settings'] ?? [], $blockContext);
         }
 
         return $html;
+    }
+
+    /**
+     * Render a container's children, bucketed by the column they sit in.
+     *
+     * A child claiming a column beyond what the section declares falls back to
+     * the last one, so narrowing the column count can never orphan content.
+     *
+     * @param  array<string, mixed>  $block
+     * @param  array<string, mixed>  $context
+     * @return array<int, string> HTML per column index
+     */
+    private function renderChildren(array $block, Contracts\Widget $definition, array $context): array
+    {
+        $settings = $block['settings'] ?? [];
+        $defaults = $definition->defaults();
+
+        $columns = max(1, min(4, (int) ($settings['columns'] ?? $defaults['columns'] ?? 1)));
+
+        $byColumn = [];
+
+        foreach (is_array($block['children'] ?? null) ? $block['children'] : [] as $child) {
+            if (! is_array($child)) {
+                continue;
+            }
+
+            $column = (int) ($child['column'] ?? 0);
+            $column = min(max($column, 0), $columns - 1);
+
+            $byColumn[$column][] = $child;
+        }
+
+        $rendered = [];
+
+        for ($column = 0; $column < $columns; $column++) {
+            $rendered[$column] = $this->renderBlocks($byColumn[$column] ?? [], $context);
+        }
+
+        return $rendered;
     }
 
     /**
@@ -79,6 +134,9 @@ class PageRenderer
             'settings' => $resolved,
             'record' => $context['record'] ?? null,
             'authoring' => (bool) ($context['authoring'] ?? false),
+            // Container widgets render their already-rendered children here,
+            // keyed by column; every other widget ignores the variable.
+            'children' => $context['children'] ?? [],
             // Some widgets embed forms (e.g. the enquiry form); supply an error
             // bag so they render outside a request, such as in tests.
             'errors' => Session::has('errors') ? Session::get('errors') : new ViewErrorBag,

@@ -150,7 +150,7 @@ class Page extends Model
      * the block's position, which keeps them stable between renders until the
      * next save persists them.
      *
-     * @return array<int, array{id: string, widget: string, settings: array<string, mixed>}>
+     * @return array<int, array{id: string, widget: string, settings: array<string, mixed>, column?: int, children?: array<int, mixed>}>
      */
     public function blocks(): array
     {
@@ -160,6 +160,17 @@ class Page extends Model
             return [];
         }
 
+        return $this->normaliseBlocks($blocks, 0);
+    }
+
+    /**
+     * Walk one level of the tree, filling in ids and dropping malformed rows.
+     *
+     * @param  array<array-key, mixed>  $blocks
+     * @return array<int, array<string, mixed>>
+     */
+    private function normaliseBlocks(array $blocks, int $depth): array
+    {
         $clean = [];
 
         foreach (array_values($blocks) as $index => $block) {
@@ -175,13 +186,23 @@ class Page extends Model
 
             $id = $block['id'] ?? null;
 
-            $clean[] = [
+            $entry = [
                 'id' => is_string($id) && $id !== ''
                     ? $id
                     : $index.'-'.$widget,
                 'widget' => $widget,
                 'settings' => is_array($block['settings'] ?? null) ? $block['settings'] : [],
             ];
+
+            if ($depth > 0 && is_numeric($block['column'] ?? null)) {
+                $entry['column'] = (int) $block['column'];
+            }
+
+            if (is_array($block['children'] ?? null)) {
+                $entry['children'] = $this->normaliseBlocks($block['children'], $depth + 1);
+            }
+
+            $clean[] = $entry;
         }
 
         return $clean;

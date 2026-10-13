@@ -60,6 +60,14 @@ interface Widget
     public function defaults(): array;
 
     /**
+     * Whether this widget can hold other blocks (a section, a column band...).
+     *
+     * Containers carry an ordered `children` list in the schema; every other
+     * widget has its children stripped by the sanitizer.
+     */
+    public function isContainer(): bool;
+
+    /**
      * Blade view rendering the widget's public markup.
      */
     public function view(): string;

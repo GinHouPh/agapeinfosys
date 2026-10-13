@@ -27,7 +27,7 @@ class WidgetLibraryTest extends TestCase
         $names = $this->registry->names();
 
         foreach ([
-            'hero', 'page-hero', 'statement', 'marquee-band', 'media-text', 'rich-text',
+            'section', 'hero', 'page-hero', 'statement', 'marquee-band', 'media-text', 'rich-text',
             'feature-cards', 'stats', 'process-steps', 'values',
             'services-grid', 'services-list', 'projects-grid', 'portfolio-grid',
             'showcase-grid', 'testimonials', 'clients-marquee', 'posts-grid',
@@ -139,6 +139,7 @@ class WidgetLibraryTest extends TestCase
             $this->assertContainsOnly('string', [
                 $entry['name'], $entry['title'], $entry['category'], $entry['description'], $entry['icon'],
             ]);
+            $this->assertIsBool($entry['container']);
         }
     }
 

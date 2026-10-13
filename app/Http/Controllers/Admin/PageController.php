@@ -60,16 +60,7 @@ class PageController extends Controller
             'authoring' => true,
         ];
 
-        $initial = [];
-
-        foreach ($page->blocks() as $block) {
-            $initial[] = [
-                'id' => $block['id'],
-                'widget' => $block['widget'],
-                'settings' => $block['settings'],
-                'html' => $renderer->renderBlock($block['widget'], $block['settings'], $context),
-            ];
-        }
+        $initial = $this->initialBlocks($page->blocks(), $context, $renderer);
 
         return view('admin.pages.edit', [
             'page' => $page,
@@ -77,7 +68,44 @@ class PageController extends Controller
             'categories' => array_keys($registry->grouped()),
             'initialBlocks' => $initial,
             'template' => $page->template(),
+            'maxDepth' => SchemaSanitizer::MAX_DEPTH,
         ]);
+    }
+
+    /**
+     * Build the editor's block tree: every node carries its rendered HTML.
+     *
+     * Containers render with empty column slots — the canvas fills them from
+     * this same tree, so what the editor draws and what it saves never drift.
+     *
+     * @param  array<int, array<string, mixed>>  $blocks
+     * @param  array<string, mixed>  $context
+     * @return array<int, array<string, mixed>>
+     */
+    private function initialBlocks(array $blocks, array $context, PageRenderer $renderer): array
+    {
+        $tree = [];
+
+        foreach ($blocks as $block) {
+            $node = [
+                'id' => $block['id'],
+                'widget' => $block['widget'],
+                'settings' => $block['settings'],
+                'html' => $renderer->renderBlock($block['widget'], $block['settings'], $context),
+            ];
+
+            if (isset($block['column'])) {
+                $node['column'] = (int) $block['column'];
+            }
+
+            if (is_array($block['children'] ?? null)) {
+                $node['children'] = $this->initialBlocks($block['children'], $context, $renderer);
+            }
+
+            $tree[] = $node;
+        }
+
+        return $tree;
     }
 
     /**

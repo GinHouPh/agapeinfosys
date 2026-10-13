@@ -31,7 +31,30 @@
         .pb-rep-row { border: 1px solid var(--color-line); padding: 12px; margin-bottom: 10px; }
         .pb-rep-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .pb-canvas { background: var(--color-ink); }
+        /* Rendered content is inert so clicks and drags land on the block
+           wrapper instead of links inside it. Nested wrappers opt back in so
+           a block inside a section is still selectable, and empty column
+           drop zones do too — otherwise they inherit the inertness above. */
         .pb-canvas .section { pointer-events: none; }
+        .pb-canvas-block, .pb-col { pointer-events: auto; }
+        .pb-col { position: relative; }
+        .pb-col:empty { min-height: 76px; border: 1px dashed var(--color-line); }
+        .pb-col.is-drop { border-color: var(--color-accent); background: rgba(217, 4, 41, .08); }
+        .pb-block-tag {
+            display: none; position: absolute; top: 0; left: 0; z-index: 20;
+            padding: 4px 8px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+            background: var(--color-line); color: #fff; pointer-events: auto;
+        }
+        .pb-canvas-block:hover > .pb-block-tag,
+        .pb-canvas-block.is-selected > .pb-block-tag { display: block; }
+        .pb-crumb { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 14px; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--color-muted); }
+        .pb-crumb button { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--color-muted); cursor: pointer; }
+        .pb-crumb button:hover { color: var(--color-accent); }
+        .pb-crumb button.is-current { color: var(--color-accent); }
+        .pb-crumb span { color: var(--color-line); }
+        .pb-hint { border: 1px dashed var(--color-line); padding: 10px 12px; margin-bottom: 16px; font-size: 11px; line-height: 1.5; color: var(--color-muted); }
+        .pb-hint b { color: var(--color-headline); font-weight: 500; }
+        .pb-chip { display: inline-block; margin-top: 4px; padding: 1px 5px; border: 1px solid var(--color-line); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-accent); }
     </style>
 @endpush
 
@@ -117,6 +140,7 @@
         'slug' => $page->slug,
         'status' => $page->status->value,
         'metaDescription' => $page->meta_description,
+        'maxDepth' => $maxDepth ?? 3,
     ];
     $builderUrls = [
         'update' => route('admin.pages.update', $page),
@@ -136,9 +160,25 @@
     const urls = @json($builderUrls);
 
     // --- State -------------------------------------------------------------
-    let blocks = initialBlocks.map((b) => ({ id: b.id, widget: b.widget, settings: b.settings || {}, html: b.html || '' }));
+    const paletteByName = {};
+    palette.forEach((w) => { paletteByName[w.name] = w; });
+    const isContainer = (name) => !!(paletteByName[name] && paletteByName[name].container);
+    const maxDepth = Number(meta.maxDepth) || 3;
+
+    /** Rebuild a node from the server's tree, giving containers a children list. */
+    function hydrateBlock(b) {
+        const node = { id: b.id, widget: b.widget, settings: b.settings || {}, html: b.html || '' };
+        if (b.column !== undefined && b.column !== null) node.column = Number(b.column) || 0;
+        node.children = Array.isArray(b.children) ? b.children.map(hydrateBlock) : (isContainer(node.widget) ? [] : undefined);
+        return node;
+    }
+
+    let blocks = initialBlocks.map(hydrateBlock);
     let selectedId = null;
+    // Column the palette drops into when a multi-column section is selected.
+    let activeColumn = 0;
     const schemaCache = {};
+    let flashTimer = null;
 
     const canvas = document.getElementById('pb-canvas');
     const panel = document.getElementById('pb-panel');
@@ -149,8 +189,68 @@
     let saveTimer = null;
 
     const uid = () => Math.random().toString(36).slice(2, 12);
-    const byId = (id) => blocks.find((b) => b.id === id);
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // --- Tree helpers ------------------------------------------------------
+    /** Find a block anywhere in the tree, with its list, index and parent. */
+    function locate(id, list, parent, depth) {
+        if (!id) return null;
+        list = list || blocks;
+        parent = parent || null;
+        depth = depth || 0;
+        for (let i = 0; i < list.length; i++) {
+            const b = list[i];
+            if (b.id === id) return { list, index: i, block: b, parent, depth };
+            const kids = b.children || [];
+            if (kids.length) {
+                const found = locate(id, kids, b, depth + 1);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    const byId = (id) => { const loc = locate(id); return loc ? loc.block : null; };
+
+    /** Whether `block` already holds `id` — you can't drop a section into itself. */
+    function containsBlock(block, id) {
+        return (block.children || []).some((c) => c.id === id || (isContainer(c.widget) && containsBlock(c, id)));
+    }
+
+    function cloneBlock(b) {
+        const copy = { id: uid(), widget: b.widget, settings: JSON.parse(JSON.stringify(b.settings || {})), html: b.html || '' };
+        if (b.column !== undefined) copy.column = b.column;
+        if (isContainer(b.widget)) copy.children = (b.children || []).map(cloneBlock);
+        return copy;
+    }
+
+    function countBlocks(list) {
+        return (list || blocks).reduce((n, b) => n + 1 + (b.children ? countBlocks(b.children) : 0), 0);
+    }
+
+    /** Root-to-node chain for the panel's breadcrumb. */
+    function pathTo(id) {
+        const path = [];
+        (function walk(list) {
+            for (const b of list) {
+                if (b.id === id) { path.push(b); return true; }
+                if (b.children && walk(b.children)) { path.push(b); return true; }
+            }
+            return false;
+        })(blocks);
+        return path.reverse();
+    }
+
+    /** A container at `depth` may hold children while the result stays inside MAX_DEPTH. */
+    const canNest = (depth) => depth + 1 < maxDepth;
+    const columnsOf = (settings) => Math.max(1, Math.min(4, Number((settings || {}).columns) || 1));
+    const insertColumn = (block) => Math.min(Math.max(activeColumn, 0), columnsOf(block.settings) - 1);
+
+    function flash(msg) {
+        saveStatus.textContent = msg;
+        clearTimeout(flashTimer);
+        flashTimer = setTimeout(() => { saveStatus.textContent = ''; }, 2600);
+    }
 
     // --- Palette -----------------------------------------------------------
     function renderPalette() {
@@ -166,6 +266,7 @@
                             <span>
                                 <span class="block font-display text-xs tracking-[0.1em] text-white uppercase">${esc(w.title)}</span>
                                 <span class="block text-[11px] leading-snug text-muted">${esc(w.description)}</span>
+                                ${w.container ? '<span class="pb-chip">Container</span>' : ''}
                             </span>
                         </button>`).join('')}
                 </div>
@@ -193,21 +294,61 @@
 
     // --- Canvas ------------------------------------------------------------
     function renderCanvas() {
-        countEl.textContent = blocks.length === 1 ? '1 section' : `${blocks.length} sections`;
+        const total = countBlocks();
+        countEl.textContent = total === 1 ? '1 section' : `${total} sections`;
         if (blocks.length === 0) {
             canvas.innerHTML = '<div class="pb-empty">No sections yet — add one from the palette on the left.</div>';
             return;
         }
-        canvas.innerHTML = blocks.map((b) => `
-            <div class="pb-canvas-block${b.id === selectedId ? ' is-selected' : ''}" data-id="${esc(b.id)}" draggable="true">
-                <div class="pb-block-toolbar">
-                    <button type="button" data-act="up" title="Move up">↑</button>
-                    <button type="button" data-act="down" title="Move down">↓</button>
-                    <button type="button" data-act="dup" title="Duplicate">⧉</button>
-                    <button type="button" data-act="del" title="Delete">✕</button>
-                </div>
-                <div class="pb-block-body">${b.html || ''}</div>
-            </div>`).join('');
+        canvas.innerHTML = '';
+        blocks.forEach((b) => canvas.appendChild(buildBlockEl(b)));
+    }
+
+    function buildBlockEl(block) {
+        const info = paletteByName[block.widget] || {};
+        const holds = isContainer(block.widget);
+        const el = document.createElement('div');
+        el.className = 'pb-canvas-block' + (block.id === selectedId ? ' is-selected' : '');
+        el.dataset.id = block.id;
+        el.draggable = true;
+        el.innerHTML =
+            (holds ? `<span class="pb-block-tag">${esc(info.title || block.widget)}</span>` : '') +
+            '<div class="pb-block-toolbar">' +
+            '<button type="button" data-act="up" title="Move up">↑</button>' +
+            '<button type="button" data-act="down" title="Move down">↓</button>' +
+            '<button type="button" data-act="dup" title="Duplicate">⧉</button>' +
+            '<button type="button" data-act="del" title="Delete">✕</button>' +
+            '</div>' +
+            `<div class="pb-block-body">${block.html || ''}</div>`;
+
+        if (holds) fillChildren(el, block);
+
+        return el;
+    }
+
+    /**
+     * Park every child in the column the server's HTML carved out for it.
+     * Until a section's preview arrives there are no slots to fill, so fall
+     * back to one — the block still has to be selectable and editable.
+     */
+    function fillChildren(wrap, block) {
+        const body = wrap.querySelector(':scope > .pb-block-body');
+        if (!body) return;
+
+        let slots = Array.prototype.slice.call(body.querySelectorAll('[data-pb-col]'));
+
+        if (slots.length === 0) {
+            const fallback = document.createElement('div');
+            fallback.className = 'pb-col';
+            fallback.dataset.pbCol = '0';
+            body.appendChild(fallback);
+            slots = [fallback];
+        }
+
+        (block.children || []).forEach((child) => {
+            const wanted = Number(child.column) || 0;
+            slots[Math.min(Math.max(wanted, 0), slots.length - 1)].appendChild(buildBlockEl(child));
+        });
     }
 
     canvas.addEventListener('click', (e) => {
@@ -220,28 +361,58 @@
             handleAction(id, actBtn.dataset.act);
             return;
         }
-        selectBlock(id);
+        const slot = e.target.closest('[data-pb-col]');
+        selectBlock(id, slot ? Number(slot.dataset.pbCol) : undefined);
     });
 
     function handleAction(id, act) {
-        const i = blocks.findIndex((b) => b.id === id);
-        if (i < 0) return;
-        if (act === 'up' && i > 0) { [blocks[i - 1], blocks[i]] = [blocks[i], blocks[i - 1]]; }
-        else if (act === 'down' && i < blocks.length - 1) { [blocks[i + 1], blocks[i]] = [blocks[i], blocks[i + 1]]; }
-        else if (act === 'dup') {
-            const copy = { ...blocks[i], id: uid(), settings: JSON.parse(JSON.stringify(blocks[i].settings)) };
-            blocks.splice(i + 1, 0, copy);
+        const loc = locate(id);
+        if (!loc) return;
+        const list = loc.list;
+
+        if (act === 'up' || act === 'down') {
+            // Step within the column the block sits in, so a sibling in
+            // another column doesn't get shuffled past it.
+            const col = Number(loc.block.column) || 0;
+            const steps = list
+                .map((b, i) => ((Number(b.column) || 0) === col ? i : -1))
+                .filter((i) => i >= 0);
+            const at = steps.indexOf(loc.index);
+            const to = at + (act === 'up' ? -1 : 1);
+
+            if (to >= 0 && to < steps.length) {
+                const a = loc.index;
+                const b = steps[to];
+                [list[a], list[b]] = [list[b], list[a]];
+            }
+        } else if (act === 'dup') {
+            const copy = cloneBlock(loc.block);
+            list.splice(loc.index + 1, 0, copy);
             selectedId = copy.id;
         } else if (act === 'del') {
-            blocks.splice(i, 1);
-            if (selectedId === id) { selectedId = null; renderPanel(); }
+            list.splice(loc.index, 1);
+            if (!locate(selectedId)) selectedId = null;
+            renderPanel();
         }
+
         renderCanvas();
         queueSave();
     }
 
     // --- Drag to reorder ---------------------------------------------------
     let dragId = null;
+
+    const clearDropMarks = () => canvas
+        .querySelectorAll('.pb-canvas-block, .pb-col')
+        .forEach((el) => el.classList.remove('is-dragging', 'is-drop-before', 'is-drop-after', 'is-drop'));
+
+    /** A section can't be dragged into itself or into one of its own children. */
+    function isBlockedTarget(ownerId, dragged) {
+        if (!ownerId) return false;
+        if (ownerId === dragged.block.id) return true;
+        return isContainer(dragged.block.widget) && containsBlock(dragged.block, ownerId);
+    }
+
     canvas.addEventListener('dragstart', (e) => {
         const wrap = e.target.closest('.pb-canvas-block');
         if (!wrap) return;
@@ -250,57 +421,155 @@
         e.dataTransfer.effectAllowed = 'move';
         try { e.dataTransfer.setData('text/plain', dragId); } catch (_) {}
     });
+
     canvas.addEventListener('dragover', (e) => {
+        if (!dragId) return;
         e.preventDefault();
+        clearDropMarks();
+
+        const dragged = locate(dragId);
+        if (!dragged) return;
+
+        const slot = e.target.closest('[data-pb-col]');
         const wrap = e.target.closest('.pb-canvas-block');
-        document.querySelectorAll('.pb-canvas-block').forEach((el) => el.classList.remove('is-drop-before', 'is-drop-after'));
+
+        // Hovering the empty part of a column: offering to drop inside it.
+        if (slot && (!wrap || !slot.contains(wrap))) {
+            const owner = slot.closest('.pb-canvas-block');
+            if (!owner || isBlockedTarget(owner.dataset.id, dragged)) return;
+            slot.classList.add('is-drop');
+            return;
+        }
+
         if (!wrap || wrap.dataset.id === dragId) return;
+        if (isBlockedTarget(wrap.dataset.id, dragged)) return;
+
         const rect = wrap.getBoundingClientRect();
         const before = (e.clientY - rect.top) < rect.height / 2;
         wrap.classList.add(before ? 'is-drop-before' : 'is-drop-after');
     });
+
     canvas.addEventListener('dragleave', (e) => {
-        const wrap = e.target.closest('.pb-canvas-block');
-        if (wrap) wrap.classList.remove('is-drop-before', 'is-drop-after');
+        const el = e.target.closest('.pb-canvas-block, .pb-col');
+        if (el) el.classList.remove('is-drop-before', 'is-drop-after', 'is-drop');
     });
+
     canvas.addEventListener('drop', (e) => {
         e.preventDefault();
+        clearDropMarks();
+        if (!dragId) return;
+
+        const dragged = locate(dragId);
+        dragId = null;
+        if (!dragged) return;
+
+        const slot = e.target.closest('[data-pb-col]');
         const wrap = e.target.closest('.pb-canvas-block');
-        document.querySelectorAll('.pb-canvas-block').forEach((el) => el.classList.remove('is-dragging', 'is-drop-before', 'is-drop-after'));
-        if (!wrap || !dragId || wrap.dataset.id === dragId) { dragId = null; return; }
-        const targetId = wrap.dataset.id;
-        const from = blocks.findIndex((b) => b.id === dragId);
-        let to = blocks.findIndex((b) => b.id === targetId);
-        if (from < 0 || to < 0) { dragId = null; return; }
+
+        // Drop into a column: append after whatever already sits there.
+        if (slot && (!wrap || !slot.contains(wrap))) {
+            const owner = slot.closest('.pb-canvas-block');
+            const ownerId = owner && owner.dataset.id;
+            if (!ownerId || isBlockedTarget(ownerId, dragged)) return;
+            const ownerLoc = locate(ownerId);
+            if (!ownerLoc) return;
+
+            const column = Number(slot.dataset.pbCol) || 0;
+            const moved = dragged.list.splice(dragged.index, 1)[0];
+            moved.column = column;
+
+            const kids = ownerLoc.block.children || (ownerLoc.block.children = []);
+            let at = kids.length;
+            kids.forEach((c, i) => { if ((Number(c.column) || 0) === column) at = i + 1; });
+            kids.splice(at, 0, moved);
+            afterDragChange();
+            return;
+        }
+
+        if (!wrap || wrap.dataset.id === dragId) return;
+        if (isBlockedTarget(wrap.dataset.id, dragged)) return;
+        if (!locate(wrap.dataset.id)) return;
+
         const rect = wrap.getBoundingClientRect();
         const before = (e.clientY - rect.top) < rect.height / 2;
-        const [moved] = blocks.splice(from, 1);
-        to = blocks.findIndex((b) => b.id === targetId);
-        blocks.splice(before ? to : to + 1, 0, moved);
-        dragId = null;
+
+        // Splice first, then re-locate: removing the block shifts the target's
+        // index whenever the two share a list.
+        const moved = dragged.list.splice(dragged.index, 1)[0];
+        const landed = locate(wrap.dataset.id);
+        if (!landed) { dragged.list.splice(dragged.index, 0, moved); return; }
+
+        if (landed.parent) moved.column = Number(landed.block.column) || 0;
+        else delete moved.column;
+
+        landed.list.splice(landed.index + (before ? 0 : 1), 0, moved);
+        afterDragChange();
+    });
+
+    function afterDragChange() {
         renderCanvas();
         queueSave();
-    });
+    }
+
     canvas.addEventListener('dragend', () => {
-        document.querySelectorAll('.pb-canvas-block').forEach((el) => el.classList.remove('is-dragging', 'is-drop-before', 'is-drop-after'));
+        clearDropMarks();
         dragId = null;
     });
 
     // --- Add / select ------------------------------------------------------
+    /** Where the palette should land: inside the selected section, else the page. */
+    function insertTarget(wantsContainer) {
+        const sel = selectedId ? locate(selectedId) : null;
+        if (!sel) return { list: blocks, index: blocks.length, depth: 0 };
+
+        if (isContainer(sel.block.widget) && canNest(sel.depth)) {
+            const column = insertColumn(sel.block);
+            if (!Array.isArray(sel.block.children)) sel.block.children = [];
+            return { list: sel.block.children, index: sel.block.children.length, column, depth: sel.depth + 1 };
+        }
+
+        if (!wantsContainer || canNest(sel.depth)) {
+            return {
+                list: sel.list,
+                index: sel.index + 1,
+                column: sel.depth > 0 ? (Number(sel.block.column) || 0) : undefined,
+                depth: sel.depth,
+            };
+        }
+
+        // Nesting budget spent — never silently drop the block on the floor.
+        return { list: blocks, index: blocks.length, depth: 0, flattened: true };
+    }
+
     async function addBlock(widget) {
         try {
             const schema = await loadSchema(widget);
+            const container = isContainer(widget);
+            const target = insertTarget(container);
+
             const block = { id: uid(), widget, settings: JSON.parse(JSON.stringify(schema.defaults || {})), html: '' };
-            blocks.push(block);
+            if (container) block.children = [];
+            if (target.column !== undefined) block.column = target.column;
+
+            target.list.splice(target.index, 0, block);
+            activeColumn = target.column === undefined ? 0 : target.column;
             selectedId = block.id;
+            if (target.flattened) flash('Section added to the page — nesting limit reached.');
+
             renderCanvas();
             renderPanel();
             await refreshPreview(block);
         } catch (_) { /* ignore */ }
     }
 
-    async function selectBlock(id) {
+    function selectBlock(id, slotColumn) {
         selectedId = id;
+        const loc = locate(id);
+
+        if (loc && loc.depth > 0) activeColumn = Number(loc.block.column) || 0;
+        else if (slotColumn !== undefined && !Number.isNaN(slotColumn)) activeColumn = slotColumn;
+        else activeColumn = 0;
+
         renderCanvas();
         renderPanel();
     }
@@ -316,7 +585,12 @@
             if (!res.ok) return;
             const data = await res.json();
             block.html = data.html || '';
-            const wrap = canvas.querySelector(`[data-id="${CSS.escape(block.id)}"] .pb-block-body`);
+
+            // A section's own HTML is where its column slots live, so rebuild
+            // the canvas rather than patching one body in place.
+            if (isContainer(block.widget)) { renderCanvas(); return; }
+
+            const wrap = canvas.querySelector(`[data-id="${CSS.escape(block.id)}"] > .pb-block-body`);
             if (wrap) wrap.innerHTML = block.html;
         } catch (_) { /* ignore */ }
     }
@@ -336,8 +610,30 @@
         let schema;
         try { schema = await loadSchema(block.widget); } catch (_) { panel.innerHTML = '<p class="text-sm text-accent">Could not load controls.</p>'; return; }
         const widgetMeta = palette.find((w) => w.name === block.widget) || {};
+        const loc = locate(block.id);
+        const holds = isContainer(block.widget);
+        const cols = columnsOf(block.settings);
+
+        const crumbs = ['<button type="button" data-crumb="">Page</button>']
+            .concat(pathTo(block.id).map((b, i, path) => {
+                const info = paletteByName[b.widget] || {};
+                const current = i === path.length - 1;
+                return `<button type="button" data-crumb="${esc(b.id)}"${current ? ' class="is-current"' : ''}>${esc(info.title || b.widget)}</button>`;
+            }))
+            .join('<span>/</span>');
+
+        const hint = holds
+            ? (cols > 1
+                ? `<div class="pb-hint">Container — new sections drop into column <b>${insertColumn(block) + 1}</b> of ${cols}. Click another column to change it.</div>`
+                : '<div class="pb-hint">Container — new sections drop in here.</div>')
+            : (loc && loc.depth > 0
+                ? `<div class="pb-hint">Inside <b>${esc((paletteByName[loc.parent.widget] || {}).title || 'section')}</b>, column ${((Number(block.column) || 0) + 1)} of ${columnsOf(loc.parent.settings)}.</div>`
+                : '');
+
         panel.innerHTML = `
+            <nav class="pb-crumb">${crumbs}</nav>
             <p class="mb-4 font-display text-sm tracking-[0.1em] text-accent uppercase">${esc(widgetMeta.title || block.widget)}</p>
+            ${hint}
             <div id="pb-controls">${schema.controls.map((c) => controlHtml(c, block.settings)).join('')}</div>`;
         panel.querySelectorAll('[data-key]').forEach((el) => {
             const ev = el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input';
@@ -426,6 +722,8 @@
             const field = controls.find((c) => c.key === key);
             block.settings[key] = coerce(el, field);
             applyConditions(panel, block.settings);
+            // The insert-column hint quotes the column count; keep it honest.
+            if (key === 'columns') renderPanel();
         }
 
         queuePreview(block);
@@ -447,8 +745,16 @@
         });
     }
 
-    // Add / remove repeater rows + image uploads (event delegation on panel).
+    // Breadcrumbs + repeater rows (event delegation on panel).
     panel.addEventListener('click', (e) => {
+        const crumb = e.target.closest('[data-crumb]');
+        if (crumb) {
+            const id = crumb.dataset.crumb;
+            if (id) selectBlock(id);
+            else { selectedId = null; activeColumn = 0; renderCanvas(); renderPanel(); }
+            return;
+        }
+
         const block = byId(selectedId);
         if (!block) return;
         const addBtn = e.target.closest('[data-add-row]');
@@ -509,6 +815,16 @@
     });
 
     // --- Save --------------------------------------------------------------
+    /** Emit the tree the sanitizer expects: children only hang off containers. */
+    function serializeBlocks(list, nested) {
+        return list.map((b) => {
+            const node = { id: b.id, widget: b.widget, settings: b.settings };
+            if (nested && b.column !== undefined) node.column = Number(b.column) || 0;
+            if (isContainer(b.widget)) node.children = serializeBlocks(b.children || [], true);
+            return node;
+        });
+    }
+
     function queueSave() {
         clearTimeout(saveTimer);
         saveTimer = setTimeout(save, 800);
@@ -516,11 +832,14 @@
 
     async function save() {
         saveStatus.textContent = 'Saving…';
-        document.getElementById('pb-f-schema').value = JSON.stringify({ blocks: blocks.map((b) => ({ id: b.id, widget: b.widget, settings: b.settings })) });
+        document.getElementById('pb-f-schema').value = JSON.stringify({ blocks: serializeBlocks(blocks, false) });
         try {
             const res = await fetch(urls.update, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': urls.csrf },
+                // Form-encoded on purpose: StorePageRequest decodes the schema
+                // out of the string field, and labelling it application/json
+                // would hide _method=PUT from the router.
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': urls.csrf },
                 body: new URLSearchParams(new FormData(document.getElementById('pb-save-form'))),
             });
             const data = await res.json().catch(() => ({}));

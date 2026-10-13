@@ -22,6 +22,7 @@ use App\Builder\Widgets\RecordBodyWidget;
 use App\Builder\Widgets\RecordCoverWidget;
 use App\Builder\Widgets\RecordRelatedWidget;
 use App\Builder\Widgets\RichTextWidget;
+use App\Builder\Widgets\SectionWidget;
 use App\Builder\Widgets\ServicesGridWidget;
 use App\Builder\Widgets\ServicesListWidget;
 use App\Builder\Widgets\ShowcaseGridWidget;
@@ -45,6 +46,7 @@ class WidgetRegistry
      * @var list<class-string<Widget>>
      */
     private array $widgets = [
+        SectionWidget::class,
         HeroWidget::class,
         PageHeroWidget::class,
         StatementWidget::class,
@@ -138,7 +140,7 @@ class WidgetRegistry
     /**
      * Public metadata (no control schema) for the palette UI.
      *
-     * @return array<int, array{name: string, title: string, category: string, description: string, icon: string}>
+     * @return array<int, array{name: string, title: string, category: string, description: string, icon: string, container: bool}>
      */
     public function manifest(): array
     {
@@ -151,6 +153,7 @@ class WidgetRegistry
                 'category' => $widget->category(),
                 'description' => $widget->description(),
                 'icon' => $widget->icon(),
+                'container' => $widget->isContainer(),
             ];
         }
 

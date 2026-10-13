@@ -145,6 +145,18 @@
         @apply bg-surface;
     }
 
+    /* A section that holds other blocks owns the rhythm inside it: the
+       widgets it contains stop banding so two columns don't each carry a
+       full section's worth of padding, and a nested shell drops its gutters
+       so its content stays flush with the outer one. */
+    .section--container .section:not(.section--container) {
+        padding-block: 0;
+    }
+
+    .section--container .shell .shell {
+        padding-inline: 0;
+    }
+
     .grid-2 {
         @apply grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16;
     }
