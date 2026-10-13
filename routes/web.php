@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\GatewayController as AdminGatewayController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\MessageController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\PageBuilderController as AdminPageBuilderController;
+use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\PlanController as AdminPlanController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
@@ -23,6 +25,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PageController as PageBuilderPageController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ServiceController;
@@ -62,6 +65,12 @@ Route::post('/forms/{form:slug}', [FormController::class, 'store'])
 
 Route::get('/blog', [PostController::class, 'index'])->name('blog.index');
 Route::get('/blog/{post:slug}', [PostController::class, 'show'])->name('blog.show');
+
+/*
+| Builder-managed pages. Registered before the root-level {product}
+| catch-all so a landing page slug is never shadowed by a product.
+*/
+Route::get('/pages/{page:slug}', [PageBuilderPageController::class, 'show'])->name('pages.show');
 
 Route::get('/contact', [ContactController::class, 'create'])->name('contact.create');
 Route::post('/contact', [ContactController::class, 'store'])
@@ -122,6 +131,14 @@ Route::prefix('admin')->group(function (): void {
 
         Route::get('business', [BusinessSettingsController::class, 'edit'])->name('admin.business.edit');
         Route::put('business', [BusinessSettingsController::class, 'update'])->name('admin.business.update');
+
+        /*
+        | Visual page builder
+        */
+        Route::resource('pages', AdminPageController::class, ['as' => 'admin'])->except('show');
+        Route::post('builder/preview', [AdminPageBuilderController::class, 'preview'])->name('admin.builder.preview');
+        Route::post('builder/widget-schema', [AdminPageBuilderController::class, 'widgetSchema'])->name('admin.builder.widget-schema');
+        Route::post('builder/upload', [AdminPageBuilderController::class, 'upload'])->name('admin.builder.upload');
 
         /*
         | Digital products, plans, gateways, orders & subscriptions

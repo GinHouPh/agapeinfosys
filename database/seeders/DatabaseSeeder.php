@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             CommerceSeeder::class,
             ShowcaseProjectSeeder::class,
             RequirementFormSeeder::class,
+            PageSeeder::class,
         ]);
     }
 }

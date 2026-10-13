@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RendersBuilderPages;
 use App\Models\Client;
 use App\Models\Post;
 use App\Models\Project;
@@ -12,11 +13,17 @@ use Illuminate\Contracts\View\View;
 
 class HomeController extends Controller
 {
+    use RendersBuilderPages;
+
     /**
      * Compose every block the landing page renders.
      */
     public function index(): View
     {
+        if ($builder = $this->builderPage('home')) {
+            return $builder;
+        }
+
         return view('home', [
             'services' => Service::query()->published()->ordered()->limit(6)->get(),
             'projects' => Project::query()->published()->ordered()->get(),

@@ -26,6 +26,7 @@
                 <x-admin-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" label="Dashboard" />
 
                 <p class="px-4 pt-6 pb-2 font-display text-[11px] tracking-[0.24em] text-muted uppercase">Content</p>
+                <x-admin-link :href="route('admin.pages.index')" :active="request()->routeIs('admin.pages.*')" label="Pages" />
                 <x-admin-link :href="route('admin.services.index')" :active="request()->routeIs('admin.services.*')" label="Services" />
                 <x-admin-link :href="route('admin.projects.index')" :active="request()->routeIs('admin.projects.*')" label="Case Studies" />
                 <x-admin-link :href="route('admin.posts.index')" :active="request()->routeIs('admin.posts.*')" label="Articles" />

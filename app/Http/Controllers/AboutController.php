@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RendersBuilderPages;
 use App\Models\Client;
 use App\Models\Project;
 use App\Models\Service;
@@ -10,11 +11,17 @@ use Illuminate\Contracts\View\View;
 
 class AboutController extends Controller
 {
+    use RendersBuilderPages;
+
     /**
      * Company story, capability overview and proof points.
      */
     public function index(): View
     {
+        if ($builder = $this->builderPage('about')) {
+            return $builder;
+        }
+
         return view('about', [
             'services' => Service::query()->published()->ordered()->limit(3)->get(),
             'projects' => Project::query()->published()->featured()->ordered()->limit(3)->get(),
