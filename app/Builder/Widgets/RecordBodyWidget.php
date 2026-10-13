@@ -27,6 +27,10 @@ class RecordBodyWidget extends GenericWidget
             'view' => 'builder.widgets.record-body',
             'controls' => [
                 [
+                    'type' => 'heading',
+                    'label' => 'Structure',
+                ],
+                [
                     'key' => 'layout',
                     'label' => 'Layout',
                     'type' => 'select',
@@ -36,6 +40,10 @@ class RecordBodyWidget extends GenericWidget
                         'media-cta' => 'Service — image and card beside body',
                         'facts' => 'Case study — body with facts aside',
                     ],
+                ],
+                [
+                    'type' => 'heading',
+                    'label' => 'Article',
                 ],
                 [
                     'key' => 'show_pullquote',
@@ -67,6 +75,10 @@ class RecordBodyWidget extends GenericWidget
                     'condition' => ['layout' => 'single', 'show_back' => true],
                 ],
                 [
+                    'type' => 'heading',
+                    'label' => 'Highlights',
+                ],
+                [
                     'key' => 'show_list',
                     'label' => 'Show highlights list',
                     'type' => 'toggle',
@@ -80,6 +92,10 @@ class RecordBodyWidget extends GenericWidget
                     'default' => '',
                     'help' => 'Leave empty to use "What you get" or "Outcomes" as the record dictates.',
                     'condition' => ['show_list' => true],
+                ],
+                [
+                    'type' => 'heading',
+                    'label' => 'Call to action card',
                 ],
                 [
                     'key' => 'cta_heading',
@@ -107,6 +123,10 @@ class RecordBodyWidget extends GenericWidget
                     'label' => 'Call to action URL',
                     'type' => 'url',
                     'default' => '/contact',
+                ],
+                [
+                    'type' => 'heading',
+                    'label' => 'Facts aside',
                 ],
                 [
                     'key' => 'facts_cta_label',

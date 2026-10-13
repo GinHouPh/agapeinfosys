@@ -25,6 +25,10 @@ class PageHeroWidget extends GenericWidget
             'section' => false,
             'controls' => [
                 [
+                    'type' => 'heading',
+                    'label' => 'Heading copy',
+                ],
+                [
                     'key' => 'source',
                     'label' => 'Heading source',
                     'type' => 'select',
@@ -69,6 +73,10 @@ class PageHeroWidget extends GenericWidget
                     'help' => 'On a record heading this falls back to the record\'s summary or excerpt when left empty.',
                 ],
                 [
+                    'type' => 'heading',
+                    'label' => 'Breadcrumb',
+                ],
+                [
                     'key' => 'show_breadcrumb',
                     'label' => 'Show breadcrumb',
                     'type' => 'toggle',
@@ -89,6 +97,10 @@ class PageHeroWidget extends GenericWidget
                     'condition' => ['show_breadcrumb' => true],
                 ],
                 [
+                    'type' => 'heading',
+                    'label' => 'Record details',
+                ],
+                [
                     'key' => 'show_meta',
                     'label' => 'Show record meta line',
                     'type' => 'toggle',
@@ -102,6 +114,10 @@ class PageHeroWidget extends GenericWidget
                     'type' => 'toggle',
                     'default' => false,
                     'condition' => ['source' => 'record'],
+                ],
+                [
+                    'type' => 'heading',
+                    'label' => 'Appearance',
                 ],
                 [
                     'key' => 'gradient',

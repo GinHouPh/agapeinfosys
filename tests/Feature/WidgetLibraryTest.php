@@ -50,13 +50,24 @@ class WidgetLibraryTest extends TestCase
             $controls = $widget->controls();
             $this->assertNotEmpty($controls, "Widget [{$name}] declares no controls.");
 
-            $keys = array_column($controls, 'key');
+            // Headings are panel furniture — a divider with no backing
+            // setting — so only the keyed controls take part in the
+            // uniqueness rule.
+            $keyed = array_filter($controls, fn (array $c) => ($c['type'] ?? '') !== 'heading');
+            $keys = array_column($keyed, 'key');
             $this->assertSame($keys, array_unique($keys), "Widget [{$name}] has duplicate control keys.");
 
             foreach ($controls as $control) {
+                if (($control['type'] ?? '') === 'heading') {
+                    $this->assertArrayNotHasKey('key', $control, "Widget [{$name}] heading controls must not declare a key.");
+                    $this->assertNotEmpty($control['label'], "Widget [{$name}] has a heading without a label.");
+
+                    continue;
+                }
+
                 $this->assertNotEmpty($control['key'], "Widget [{$name}] has a control without a key.");
                 $this->assertNotEmpty($control['label'], "Widget [{$name}] control [{$control['key']}] needs a label.");
-                $this->assertContains($control['type'], ['text', 'textarea', 'number', 'select', 'toggle', 'image', 'url', 'repeater'],
+                $this->assertContains($control['type'], ['text', 'textarea', 'number', 'select', 'toggle', 'image', 'url', 'repeater', 'heading'],
                     "Widget [{$name}] control [{$control['key']}] has an unknown type.");
 
                 if ($control['type'] === 'select') {

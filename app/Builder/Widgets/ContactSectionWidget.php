@@ -22,6 +22,10 @@ class ContactSectionWidget extends GenericWidget
             'view' => 'builder.widgets.contact-section',
             'controls' => [
                 [
+                    'type' => 'heading',
+                    'label' => 'Heading',
+                ],
+                [
                     'key' => 'subtitle',
                     'label' => 'Subtitle',
                     'type' => 'text',
@@ -44,6 +48,10 @@ class ContactSectionWidget extends GenericWidget
                     'label' => 'Lead paragraph',
                     'type' => 'textarea',
                     'default' => 'Tell us what you are trying to achieve. We will come back within one business day with a point of view, a rough shape of the work and the next sensible step.',
+                ],
+                [
+                    'type' => 'heading',
+                    'label' => 'Enquiry form',
                 ],
                 [
                     'key' => 'show_form',
@@ -75,6 +83,10 @@ class ContactSectionWidget extends GenericWidget
                     'condition' => ['show_form' => true],
                 ],
                 [
+                    'type' => 'heading',
+                    'label' => 'Detail blocks',
+                ],
+                [
                     'key' => 'show_office',
                     'label' => 'Show office address',
                     'type' => 'toggle',
@@ -91,6 +103,10 @@ class ContactSectionWidget extends GenericWidget
                     'label' => 'Show studio address',
                     'type' => 'toggle',
                     'default' => true,
+                ],
+                [
+                    'type' => 'heading',
+                    'label' => 'Working hours',
                 ],
                 [
                     'key' => 'show_hours',
@@ -118,6 +134,10 @@ class ContactSectionWidget extends GenericWidget
                     'type' => 'textarea',
                     'default' => "Monday – Friday, 9:30 – 18:30 IST.\nCritical support is staffed around the clock.",
                     'condition' => ['show_hours' => true],
+                ],
+                [
+                    'type' => 'heading',
+                    'label' => 'Business details',
                 ],
                 [
                     'key' => 'show_business',

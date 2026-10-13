@@ -23,6 +23,10 @@ class HeroWidget extends GenericWidget
             'section' => false,
             'controls' => [
                 [
+                    'type' => 'heading',
+                    'label' => 'Heading copy',
+                ],
+                [
                     'key' => 'eyebrow',
                     'label' => 'Eyebrow',
                     'type' => 'text',
@@ -49,6 +53,10 @@ class HeroWidget extends GenericWidget
                     'default' => 'We turn complex business problems into dependable software — from discovery workshops and product design through to cloud operations and long term support.',
                 ],
                 [
+                    'type' => 'heading',
+                    'label' => 'Buttons',
+                ],
+                [
                     'key' => 'buttons',
                     'label' => 'Buttons',
                     'type' => 'repeater',
@@ -71,6 +79,10 @@ class HeroWidget extends GenericWidget
                         ['label' => 'Explore Services', 'url' => '/services', 'variant' => 'accent'],
                         ['label' => 'See Our Work', 'url' => '/portfolio', 'variant' => 'ghost'],
                     ],
+                ],
+                [
+                    'type' => 'heading',
+                    'label' => 'Stat card',
                 ],
                 [
                     'key' => 'show_card',
@@ -106,6 +118,10 @@ class HeroWidget extends GenericWidget
                         ['value' => 250, 'suffix' => '+', 'label' => 'Products shipped'],
                         ['value' => 98, 'suffix' => '%', 'label' => 'Client retention'],
                     ],
+                ],
+                [
+                    'type' => 'heading',
+                    'label' => 'Appearance',
                 ],
                 [
                     'key' => 'gradient',

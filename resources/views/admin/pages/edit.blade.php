@@ -54,6 +54,11 @@
         .pb-crumb span { color: var(--color-line); }
         .pb-hint { border: 1px dashed var(--color-line); padding: 10px 12px; margin-bottom: 16px; font-size: 11px; line-height: 1.5; color: var(--color-muted); }
         .pb-hint b { color: var(--color-headline); font-weight: 500; }
+        /* Panel group divider. Shares the .field__label voice but is styled
+           here, so the builder never leans on a shared stylesheet for its
+           own panel furniture. */
+        .pb-field-heading { margin: 22px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--color-line); font-family: var(--font-display); font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--color-headline); }
+        .pb-field-heading:first-child { margin-top: 0; }
         .pb-chip { display: inline-block; margin-top: 4px; padding: 1px 5px; border: 1px solid var(--color-line); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-accent); }
         .pb-history button { padding: 4px 9px; line-height: 1.4; transition: color .15s, border-color .15s; }
         .pb-history button[disabled] { opacity: .3; cursor: not-allowed; }
@@ -838,7 +843,12 @@
             <p class="mb-4 font-display text-sm tracking-[0.1em] text-accent uppercase">${esc(widgetMeta.title || block.widget)}</p>
             ${hint}
             <div id="pb-controls">${schema.controls.map((c) => controlHtml(c, block.settings)).join('')}</div>`;
-        panel.querySelectorAll('[data-key]').forEach((el) => {
+        // Sub-fields inside a repeater carry `data-sub` instead of `data-key`;
+        // both drive the same mutation, so both need the listener. Image
+        // controls are skipped — their hidden path input is written by the
+        // delegated upload handler, not by typing.
+        panel.querySelectorAll('[data-key], [data-sub]').forEach((el) => {
+            if (el.classList.contains('pb-img-path') || el.hasAttribute('data-upload')) return;
             const ev = el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input';
             el.addEventListener(ev, () => onControlChange(el, block, schema.controls));
         });
@@ -846,10 +856,15 @@
     }
 
     function controlHtml(c, settings) {
+        // Headings are panel furniture, not settings: no key, nothing binds.
+        if (c.type === 'heading') {
+            return `<p class="pb-field-heading">${esc(c.label)}</p>`;
+        }
+
         const key = c.key;
         const val = settings[key];
         const cond = c.condition ? ` data-cond='${esc(JSON.stringify(c.condition))}'` : '';
-        const label = `<label class="field__label">${esc(c.label)}${c.type === 'repeater' ? '' : ''}</label>`;
+        const label = `<label class="field__label">${esc(c.label)}</label>`;
         const help = c.help ? `<p class="text-[11px] text-muted">${esc(c.help)}</p>` : '';
 
         if (c.type === 'repeater') {
@@ -870,6 +885,11 @@
             input = `<label class="flex cursor-pointer items-center gap-3 border border-line p-3 has-[:checked]:border-accent"><input type="checkbox" data-key="${esc(key)}" class="h-4 w-4 accent-accent"${val ? ' checked' : ''}><span class="text-sm text-white">On</span></label>`;
         } else if (c.type === 'number') {
             input = `<input class="input" type="number" data-key="${esc(key)}" value="${esc(val ?? '')}">`;
+        } else if (c.type === 'url') {
+            // type=url gets the browser's link keyboard and its own validity
+            // state; the placeholder covers both the absolute and site-local
+            // forms the renderer accepts.
+            input = `<input class="input" type="url" data-key="${esc(key)}" value="${esc(val ?? '')}" placeholder="https://… or /page" spellcheck="false" autocomplete="url">`;
         } else if (c.type === 'image') {
             input = `<div data-image="${esc(key)}">
                 <input type="hidden" class="pb-img-path" data-key="${esc(key)}" value="${esc(val ?? '')}">
@@ -890,6 +910,7 @@
             if (f.type === 'textarea') input = `<textarea class="input" data-sub="${esc(f.key)}" rows="2">${esc(v ?? '')}</textarea>`;
             else if (f.type === 'select') input = `<select class="input" data-sub="${esc(f.key)}">${Object.entries(f.options || {}).map(([ov, ol]) => `<option value="${esc(ov)}"${String(v) === String(ov) ? ' selected' : ''}>${esc(ol)}</option>`).join('')}</select>`;
             else if (f.type === 'number') input = `<input class="input" type="number" data-sub="${esc(f.key)}" value="${esc(v ?? '')}">`;
+            else if (f.type === 'url') input = `<input class="input" type="url" data-sub="${esc(f.key)}" value="${esc(v ?? '')}" placeholder="https://… or /page" spellcheck="false" autocomplete="url">`;
             else if (f.type === 'image') input = `<div><input type="hidden" class="pb-img-path" data-sub="${esc(f.key)}" value="${esc(v ?? '')}"><div class="mb-2 pb-img-preview">${v ? `<img src="${esc(publicUrl(v))}" class="h-16 w-auto border border-line" alt="">` : ''}</div><input type="file" accept="image/*" class="text-xs text-muted" data-upload></div>`;
             else input = `<input class="input" type="text" data-sub="${esc(f.key)}" value="${esc(v ?? '')}">`;
             return `<div class="field"><label class="field__label">${esc(f.label)}</label>${input}</div>`;
