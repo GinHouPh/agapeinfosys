@@ -109,6 +109,60 @@ class SchemaSanitizerTest extends TestCase
         $this->assertSame('', $this->settingsFor('cta-card', ['button_url' => new \stdClass])['button_url']);
     }
 
+    public function test_a_responsive_control_keeps_a_value_for_each_device(): void
+    {
+        $settings = $this->settingsFor('section', [
+            'columns' => '4',
+            'columns_tablet' => '2',
+            'columns_mobile' => '1',
+            'gap_tablet' => 'sm',
+        ]);
+
+        $this->assertSame('4', $settings['columns']);
+        $this->assertSame('2', $settings['columns_tablet']);
+        $this->assertSame('1', $settings['columns_mobile']);
+        $this->assertSame('sm', $settings['gap_tablet']);
+    }
+
+    public function test_a_tier_nobody_authored_is_left_absent_so_it_inherits_from_desktop(): void
+    {
+        $settings = $this->settingsFor('section', [
+            'columns' => '4',
+            'columns_tablet' => '',
+            'columns_mobile' => null,
+        ]);
+
+        $this->assertSame('4', $settings['columns']);
+        $this->assertArrayNotHasKey('columns_tablet', $settings);
+        $this->assertArrayNotHasKey('columns_mobile', $settings);
+    }
+
+    public function test_an_override_the_control_cannot_hold_is_dropped_rather_than_pinned_to_its_default(): void
+    {
+        $settings = $this->settingsFor('section', ['columns_tablet' => '9']);
+
+        // Coercing would have pinned tablet to the default of one column and
+        // quietly stopped it following desktop's four.
+        $this->assertArrayNotHasKey('columns_tablet', $settings);
+
+        $settings = $this->settingsFor('section', ['gap_mobile' => ['nope']]);
+
+        $this->assertArrayNotHasKey('gap_mobile', $settings);
+    }
+
+    public function test_device_keys_beside_a_control_that_is_not_responsive_are_dropped(): void
+    {
+        $settings = $this->settingsFor('section', [
+            'background' => 'surface',
+            'background_tablet' => 'ink',
+            'background_mobile' => 'nope',
+        ]);
+
+        $this->assertSame('surface', $settings['background']);
+        $this->assertArrayNotHasKey('background_tablet', $settings);
+        $this->assertArrayNotHasKey('background_mobile', $settings);
+    }
+
     public function test_a_dangerous_link_never_reaches_the_database_through_the_save_endpoint(): void
     {
         $admin = User::factory()->admin()->create();

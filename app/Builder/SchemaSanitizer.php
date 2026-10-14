@@ -135,6 +135,35 @@ class SchemaSanitizer
             $clean[$key] = array_key_exists($key, $incoming)
                 ? $this->coerce($control, $incoming[$key])
                 : ($defaults[$key] ?? null);
+
+            if (($control['responsive'] ?? false) === true) {
+                foreach (Device::overrides($key) as $overrideKey) {
+                    $value = $incoming[$overrideKey] ?? null;
+
+                    if (! is_scalar($value)) {
+                        continue;
+                    }
+
+                    if (is_string($value) && trim($value) === '') {
+                        continue;
+                    }
+
+                    $coerced = $this->coerce($control, $value);
+
+                    // An override is kept only if it survives coercion
+                    // unchanged. Anything else is a value nobody chose — a
+                    // blank field, an option this control does not offer — and
+                    // pinning it would break the inheritance the panel
+                    // promised, so the key stays absent and the tier falls
+                    // back to desktop. The base key gets no such escape
+                    // because it has to hold something.
+                    if (! is_scalar($coerced) || (string) $coerced !== (string) $value) {
+                        continue;
+                    }
+
+                    $clean[$overrideKey] = $coerced;
+                }
+            }
         }
 
         return $clean;

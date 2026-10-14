@@ -74,6 +74,15 @@ class WidgetLibraryTest extends TestCase
                     $this->assertNotEmpty($control['options'] ?? [], "Widget [{$name}] control [{$control['key']}] needs options.");
                 }
 
+                // A per-device override is stored beside the base key and
+                // inherits when absent, so only a control whose value round
+                // trips through one scalar can carry one: a repeater or a
+                // toggle has no way for the panel to say "automatic".
+                if (! empty($control['responsive'])) {
+                    $this->assertSame('select', $control['type'],
+                        "Widget [{$name}] control [{$control['key']}] is marked responsive, which only select controls support.");
+                }
+
                 if ($control['type'] === 'repeater') {
                     $this->assertNotEmpty($control['fields'] ?? [], "Widget [{$name}] control [{$control['key']}] needs repeater fields.");
                 }

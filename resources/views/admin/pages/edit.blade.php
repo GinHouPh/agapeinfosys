@@ -59,6 +59,14 @@
            own panel furniture. */
         .pb-field-heading { margin: 22px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--color-line); font-family: var(--font-display); font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--color-headline); }
         .pb-field-heading:first-child { margin-top: 0; }
+        /* Device tier switcher. Chooses which tier of a responsive control the
+           panel reads and writes — it says nothing about how the canvas is
+           drawn, which is a separate problem the canvas itself owns. */
+        .pb-device { display: flex; margin-bottom: 16px; border: 1px solid var(--color-line); }
+        .pb-device button { flex: 1; padding: 7px 4px; border-left: 1px solid var(--color-line); font-family: var(--font-display); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-muted); cursor: pointer; transition: color .15s, background .15s; }
+        .pb-device button:first-child { border-left: 0; }
+        .pb-device button:hover { color: var(--color-headline); }
+        .pb-device button.is-on { background: var(--color-accent); color: #fff; }
         .pb-chip { display: inline-block; margin-top: 4px; padding: 1px 5px; border: 1px solid var(--color-line); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-accent); }
         .pb-history button { padding: 4px 9px; line-height: 1.4; transition: color .15s, border-color .15s; }
         .pb-history button[disabled] { opacity: .3; cursor: not-allowed; }
@@ -283,6 +291,12 @@
     let selectedId = null;
     // Column the palette drops into when a multi-column section is selected.
     let activeColumn = 0;
+    // Which tier of a responsive control the panel edits. It stays put as you
+    // move between blocks, the way a device choice does in the preview it will
+    // one day drive; widgets with nothing responsive simply ignore it.
+    const deviceTiers = @json(\App\Builder\Device::TIERS);
+    const deviceSuffix = @json(\App\Builder\Device::SUFFIX);
+    let panelDevice = deviceTiers[0];
     const schemaCache = {};
     let flashTimer = null;
 
@@ -1012,11 +1026,29 @@
                 ? `<div class="pb-hint">Inside <b>${esc((paletteByName[loc.parent.widget] || {}).title || 'section')}</b>, column ${((Number(block.column) || 0) + 1)} of ${columnsOf(loc.parent.settings)}.</div>`
                 : '');
 
+        // The switcher only earns its place on a widget that has something to
+        // switch: it picks which tier of a responsive control the panel edits.
+        const switcher = schema.controls.some((c) => c.responsive)
+            ? `<div class="pb-device" role="group" aria-label="Device tier">${deviceTiers.map((t) => {
+                const on = panelDevice === t;
+                const label = t.charAt(0).toUpperCase() + t.slice(1);
+                return `<button type="button" data-device="${esc(t)}" aria-pressed="${on}"${on ? ' class="is-on"' : ''}>${esc(label)}</button>`;
+            }).join('')}</div>`
+            : '';
+
         panel.innerHTML = `
             <nav class="pb-crumb">${crumbs}</nav>
             <p class="mb-4 font-display text-sm tracking-[0.1em] text-accent uppercase">${esc(widgetMeta.title || block.widget)}</p>
             ${hint}
+            ${switcher}
             <div id="pb-controls">${schema.controls.map((c) => controlHtml(c, block.settings)).join('')}</div>`;
+        panel.querySelectorAll('[data-device]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                if (panelDevice === btn.dataset.device) return;
+                panelDevice = btn.dataset.device;
+                renderPanel();
+            });
+        });
         // Sub-fields inside a repeater carry `data-sub` instead of `data-key`;
         // both drive the same mutation, so both need the listener. Image
         // controls are skipped — their hidden path input is written by the
@@ -1036,7 +1068,13 @@
         }
 
         const key = c.key;
-        const val = settings[key];
+        // A responsive control reads the tier the panel is editing. Desktop is
+        // the base key itself; the other tiers are the siblings beside it, and
+        // a tier with no sibling of its own inherits from desktop.
+        const tier = c.responsive ? panelDevice : 'desktop';
+        const storageKey = tier === 'desktop' ? key : key + (deviceSuffix[tier] || '');
+        const hasOverride = tier === 'desktop' || Object.prototype.hasOwnProperty.call(settings, storageKey);
+        const val = hasOverride ? settings[storageKey] : settings[key];
         const cond = c.condition ? ` data-cond='${esc(JSON.stringify(c.condition))}'` : '';
         const label = `<label class="field__label">${esc(c.label)}</label>`;
         const help = c.help ? `<p class="text-[11px] text-muted">${esc(c.help)}</p>` : '';
@@ -1054,7 +1092,14 @@
         if (c.type === 'textarea') {
             input = `<textarea class="input" data-key="${esc(key)}" rows="3">${esc(val ?? '')}</textarea>`;
         } else if (c.type === 'select') {
-            input = `<select class="input" data-key="${esc(key)}">${Object.entries(c.options || {}).map(([ov, ol]) => `<option value="${esc(ov)}"${String(val) === String(ov) ? ' selected' : ''}>${esc(ol)}</option>`).join('')}</select>`;
+            // A tier with no override must not *look* set: leaving every real
+            // option unselected and offering Automatic in their place is what
+            // keeps the displayed value from being mistaken for one the author
+            // chose — and quietly saved the next time the control is touched.
+            const canInherit = tier !== 'desktop';
+            const shown = hasOverride ? val : '';
+            const inherit = canInherit ? `<option value=""${hasOverride ? '' : ' selected'}>Automatic</option>` : '';
+            input = `<select class="input" data-key="${esc(key)}">${inherit}${Object.entries(c.options || {}).map(([ov, ol]) => `<option value="${esc(ov)}"${String(shown) === String(ov) ? ' selected' : ''}>${esc(ol)}</option>`).join('')}</select>`;
         } else if (c.type === 'toggle') {
             input = `<label class="flex cursor-pointer items-center gap-3 border border-line p-3 has-[:checked]:border-accent"><input type="checkbox" data-key="${esc(key)}" class="h-4 w-4 accent-accent"${val ? ' checked' : ''}><span class="text-sm text-white">On</span></label>`;
         } else if (c.type === 'number') {
@@ -1118,10 +1163,23 @@
             return;
         } else if (key) {
             const field = controls.find((c) => c.key === key);
-            block.settings[key] = coerce(el, field);
+            const tier = field && field.responsive ? panelDevice : 'desktop';
+            const storageKey = tier === 'desktop' ? key : key + (deviceSuffix[tier] || '');
+
+            if (tier !== 'desktop' && el.value === '') {
+                // "Automatic" is the absence of an override, so the key goes
+                // away rather than being written as an empty string — a blank
+                // value would be coerced to the control default and inherit
+                // nothing.
+                delete block.settings[storageKey];
+            } else {
+                block.settings[storageKey] = coerce(el, field);
+            }
+
             applyConditions(panel, block.settings);
-            // The insert-column hint quotes the column count; keep it honest.
-            if (key === 'columns') renderPanel();
+            // The insert-column hint quotes the desktop count, so only a
+            // change to that tier needs the panel redrawn behind it.
+            if (tier === 'desktop' && key === 'columns') renderPanel();
         }
 
         coalesce('Edited ' + ((paletteByName[block.widget] || {}).title || block.widget));

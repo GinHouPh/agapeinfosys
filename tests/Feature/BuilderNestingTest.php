@@ -257,4 +257,68 @@ class BuilderNestingTest extends TestCase
         $this->assertStringNotContainsString('class="section ', $html);
         $this->assertStringNotContainsString('data-pb-col', $html);
     }
+
+    public function test_a_section_without_device_overrides_renders_exactly_as_before(): void
+    {
+        $html = $this->renderer->renderBlock('section', ['columns' => '4'], ['authoring' => true]);
+
+        // The stack toggle still decides the mobile count, so a section that
+        // has never been authored per device is untouched by any of this.
+        $this->assertStringContainsString('grid-cols-1', $html);
+        $this->assertStringContainsString('md:grid-cols-4', $html);
+        $this->assertStringNotContainsString('lg:grid-cols', $html);
+        $this->assertSame(4, substr_count($html, 'data-pb-col='));
+    }
+
+    public function test_a_section_renders_the_column_count_authored_for_each_device(): void
+    {
+        $html = $this->renderer->renderBlock('section', [
+            'columns' => '4',
+            'columns_tablet' => '2',
+            'columns_mobile' => '1',
+        ], ['authoring' => true]);
+
+        $this->assertStringContainsString('grid-cols-1', $html);
+        $this->assertStringContainsString('md:grid-cols-2', $html);
+        $this->assertStringContainsString('lg:grid-cols-4', $html);
+
+        // Desktop owns the structure — it is the count the panel quotes for
+        // drop zones — while the smaller tiers only say how those columns
+        // wrap at narrower widths.
+        $this->assertSame(4, substr_count($html, 'data-pb-col='));
+    }
+
+    public function test_gap_and_vertical_alignment_carry_a_value_per_device_too(): void
+    {
+        $html = $this->renderer->renderBlock('section', [
+            'gap' => 'xl',
+            'gap_mobile' => 'none',
+            'align' => 'end',
+            'align_mobile' => 'center',
+        ]);
+
+        // Tablet has no override of its own, so it follows desktop rather
+        // than the mobile value underneath it.
+        $this->assertStringContainsString('gap-0', $html);
+        $this->assertStringContainsString('md:gap-16', $html);
+        $this->assertStringNotContainsString('lg:gap-', $html);
+
+        $this->assertStringContainsString('items-center', $html);
+        $this->assertStringContainsString('md:items-end', $html);
+        $this->assertStringNotContainsString('lg:items-', $html);
+    }
+
+    public function test_an_explicit_mobile_column_count_outranks_the_stack_toggle(): void
+    {
+        $stacked = $this->renderer->renderBlock('section', ['columns' => '3']);
+        $overridden = $this->renderer->renderBlock('section', ['columns' => '3', 'columns_mobile' => '3']);
+
+        $this->assertStringContainsString('grid-cols-1', $stacked);
+
+        // Three columns everywhere means no tier differs from the one below
+        // it, so nothing but the base class is worth writing.
+        $this->assertStringContainsString('grid-cols-3', $overridden);
+        $this->assertStringNotContainsString('md:grid-cols-3', $overridden);
+        $this->assertStringNotContainsString('grid-cols-1', $overridden);
+    }
 }

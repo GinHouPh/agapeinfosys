@@ -128,7 +128,11 @@ class PageRenderer
             return '';
         }
 
-        $resolved = $this->resolveSettings($definition->defaults(), $settings);
+        $resolved = $this->resolveSettings(
+            $definition->defaults(),
+            $settings,
+            Device::keysFor($definition->controls()),
+        );
 
         return $this->views->make($definition->view(), [
             'settings' => $resolved,
@@ -146,13 +150,24 @@ class PageRenderer
     /**
      * Merge incoming settings over defaults, keeping only known keys.
      *
+     * A per-device sibling is not a default — a tier with none of its own
+     * inherits from desktop rather than from the control's default — so those
+     * keys are carried across by name, and only when they were actually sent.
+     *
      * @param  array<string, mixed>  $defaults
      * @param  array<string, mixed>  $settings
+     * @param  array<int, string>  $responsiveKeys
      * @return array<string, mixed>
      */
-    private function resolveSettings(array $defaults, array $settings): array
+    private function resolveSettings(array $defaults, array $settings, array $responsiveKeys = []): array
     {
         $clean = [];
+
+        foreach ($responsiveKeys as $key) {
+            if (array_key_exists($key, $settings)) {
+                $clean[$key] = $settings[$key];
+            }
+        }
 
         foreach ($defaults as $key => $default) {
             $value = $settings[$key] ?? $default;

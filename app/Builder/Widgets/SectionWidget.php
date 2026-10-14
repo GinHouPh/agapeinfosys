@@ -28,26 +28,28 @@ class SectionWidget extends GenericWidget
                     'label' => 'Columns',
                     'type' => 'select',
                     'default' => '1',
+                    'responsive' => true,
                     'options' => [
                         '1' => 'One',
                         '2' => 'Two',
                         '3' => 'Three',
                         '4' => 'Four',
                     ],
-                    'help' => 'Each column is a drop zone on the canvas.',
+                    'help' => 'Each column is a drop zone on the canvas. Set a different count per device from the switcher above.',
                 ],
                 [
                     'key' => 'stack',
                     'label' => 'Stack on mobile',
                     'type' => 'toggle',
                     'default' => true,
-                    'help' => 'Collapse to a single column below the md breakpoint.',
+                    'help' => 'Collapse to a single column below the md breakpoint. Ignored once a mobile column count is set.',
                 ],
                 [
                     'key' => 'gap',
                     'label' => 'Column gap',
                     'type' => 'select',
                     'default' => 'lg',
+                    'responsive' => true,
                     'options' => [
                         'none' => 'None',
                         'sm' => 'Small',
@@ -61,6 +63,7 @@ class SectionWidget extends GenericWidget
                     'label' => 'Vertical alignment',
                     'type' => 'select',
                     'default' => 'stretch',
+                    'responsive' => true,
                     'options' => [
                         'stretch' => 'Stretch to the tallest column',
                         'start' => 'Top',
