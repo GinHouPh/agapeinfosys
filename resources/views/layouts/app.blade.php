@@ -8,6 +8,36 @@
     <meta name="description" content="@yield('description', 'Agape Infosys builds custom software, web and mobile products, and provides IT consultancy for enterprises.')">
     <meta name="theme-color" content="#0c0c0c">
 
+    {{-- Theme bootstrap — runs before the stylesheet so the very first paint
+         already matches the stored preference. Stored values are `dark`,
+         `light` or `system` (follow the screen); the markup ships dark, so
+         anything else is left untouched. --}}
+    <script>
+        (function () {
+            var mode = null;
+
+            try {
+                mode = localStorage.getItem('theme');
+            } catch (error) {}
+
+            if (mode !== 'light' && mode !== 'system') {
+                return;
+            }
+
+            var light = mode === 'light' || window.matchMedia('(prefers-color-scheme: light)').matches;
+            var root = document.documentElement;
+
+            root.classList.toggle('light', light);
+            root.classList.toggle('dark', !light);
+
+            var meta = document.querySelector('meta[name="theme-color"]');
+
+            if (meta) {
+                meta.setAttribute('content', light ? '#f6f6f3' : '#0c0c0c');
+            }
+        })();
+    </script>
+
     <link rel="canonical" href="{{ url()->current() }}">
 
     <meta property="og:type" content="website">
@@ -21,7 +51,7 @@
     @stack('head')
 </head>
 <body class="bg-ink text-body site-body">
-    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:bg-accent focus:px-4 focus:py-2 focus:text-white">
+    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:bg-accent focus:px-4 focus:py-2 focus:text-on-accent">
         Skip to content
     </a>
 

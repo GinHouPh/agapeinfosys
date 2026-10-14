@@ -74,13 +74,13 @@
                                 />
 
                                 <span
-                                    class="absolute top-3 left-3 border px-2.5 py-1 font-display text-[10px] tracking-[0.2em] uppercase {{ $project->status === \App\Enums\ProjectStatus::Ongoing ? 'border-accent bg-accent text-white' : 'border-line bg-ink/85 text-muted' }}"
+                                    class="absolute top-3 left-3 border px-2.5 py-1 font-display text-[10px] tracking-[0.2em] uppercase {{ $project->status === \App\Enums\ProjectStatus::Ongoing ? 'border-accent bg-accent text-on-accent' : 'border-line bg-ink/85 text-muted' }}"
                                 >
                                     {{ $project->status->label() }}
                                 </span>
 
                                 @if ($project->expected_launch)
-                                    <span class="absolute right-3 bottom-3 left-3 text-[11px] tracking-[0.18em] text-white/80 uppercase">
+                                    <span class="absolute right-3 bottom-3 left-3 bg-ink/85 px-2.5 py-1.5 text-[11px] tracking-[0.18em] text-white/80 uppercase">
                                         Expected {{ $project->expected_launch->format('M Y') }}
                                     </span>
                                 @endif

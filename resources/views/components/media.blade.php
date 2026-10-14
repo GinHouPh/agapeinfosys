@@ -19,17 +19,20 @@
     @else
         <svg viewBox="0 0 480 600" preserveAspectRatio="xMidYMid slice" class="h-full w-full" role="img" aria-label="{{ $text }}">
             <defs>
+                {{-- The placeholder paints with the design tokens (via
+                     inline style — SVG attributes ignore var()) so it
+                     follows the light/dark theme like everything else. --}}
                 <linearGradient id="{{ $gradientId }}" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#1b1b1b"/>
-                    <stop offset="55%" stop-color="#141414"/>
-                    <stop offset="100%" stop-color="#0c0c0c"/>
+                    <stop offset="0%" style="stop-color: var(--color-box)"/>
+                    <stop offset="55%" style="stop-color: var(--color-surface)"/>
+                    <stop offset="100%" style="stop-color: var(--color-ink)"/>
                 </linearGradient>
             </defs>
 
             <rect width="480" height="600" fill="url(#{{ $gradientId }})"/>
 
             @if ($variant === 0)
-                <g fill="none" stroke="#383838" stroke-width="1">
+                <g fill="none" style="stroke: var(--color-line)" stroke-width="1">
                     <circle cx="360" cy="140" r="60"/>
                     <circle cx="360" cy="140" r="105"/>
                     <circle cx="360" cy="140" r="150"/>
@@ -37,14 +40,14 @@
                 </g>
                 <circle cx="360" cy="140" r="8" fill="#d90429"/>
             @elseif ($variant === 1)
-                <g stroke="#2c2c2c" stroke-width="1">
+                <g style="stroke: var(--color-box)" stroke-width="1">
                     @for ($i = -6; $i < 16; $i++)
                         <path d="M{{ $i * 60 }} 0 L{{ $i * 60 + 600 }} 600"/>
                     @endfor
                 </g>
                 <path d="M60 600 L420 0" stroke="#d90429" stroke-width="2"/>
             @else
-                <g fill="none" stroke="#383838" stroke-width="1">
+                <g fill="none" style="stroke: var(--color-line)" stroke-width="1">
                     <rect x="70" y="110" width="340" height="340"/>
                     <rect x="120" y="160" width="240" height="240"/>
                     <path d="M70 110 L410 450 M410 110 L70 450"/>

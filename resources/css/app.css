@@ -14,6 +14,11 @@
     --color-accent: #d90429;
     --color-accent-soft: rgba(217, 4, 41, 0.14);
 
+    /* True white for anything sitting ON the accent red. Unlike
+       --color-white, this token never flips with the theme, so text and
+       borders on accent backgrounds keep their contrast in light mode. */
+    --color-on-accent: #ffffff;
+
     --font-display: 'Akshar', ui-sans-serif, system-ui, sans-serif;
     --font-body: 'Roboto', ui-sans-serif, system-ui, sans-serif;
 
@@ -24,9 +29,32 @@
     --container-content: 1300px;
 }
 
+/* ------------------------------------------------------------------
+   Light theme. The markup keeps speaking in the same tokens, so
+   re-declaring them under `html.light` repaints every utility at once
+   (unlayered rules beat the `@layer theme` output of `@theme`).
+   `--color-white` resolves to near-black because the site uses
+   `text-white` as "emphatic text on a surface"; text on the accent red
+   uses `text-on-accent`, which stays white in both themes. Applied
+   before first paint by the theme bootstrap in the app layout.
+   ------------------------------------------------------------------ */
+html.light {
+    --color-ink: #f6f6f3;
+    --color-surface: #ecebe7;
+    --color-box: #e1e0db;
+    --color-line: #cdccc6;
+    --color-muted: #64635e;
+    --color-body: #2b2a28;
+    --color-headline: #0c0c0c;
+    --color-accent-soft: rgba(217, 4, 41, 0.09);
+    --color-white: #0c0c0c;
+    color-scheme: light;
+}
+
 @layer base {
     :root {
         --section-y: var(--spacing-section);
+        color-scheme: dark;
     }
 
     /* Vertical rhythm switches on the same two breakpoints the markup
@@ -115,7 +143,7 @@
     }
 
     ::selection {
-        @apply bg-accent text-white;
+        @apply bg-accent text-on-accent;
     }
 
     :focus-visible {
@@ -231,11 +259,11 @@
     }
 
     .btn--solid:hover {
-        @apply bg-accent text-white;
+        @apply bg-accent text-on-accent;
     }
 
     .btn--accent {
-        @apply bg-accent text-white;
+        @apply bg-accent text-on-accent;
     }
 
     .btn--accent:hover {
@@ -247,7 +275,7 @@
     }
 
     .btn--ghost:hover {
-        @apply border-accent bg-accent text-white;
+        @apply border-accent bg-accent text-on-accent;
     }
 
     .btn__strip {
@@ -409,14 +437,31 @@
         padding-top: env(safe-area-inset-top);
     }
 
+    /* Three equal columns keep the logo optically centred no matter how
+       wide the contact cluster (left) or the quote cluster (right) gets;
+       each side only grows to its own content. */
     .top-bar__inner {
-        @apply flex h-10 items-center justify-between gap-4 text-xs;
+        @apply grid h-10 grid-cols-[1fr_auto_1fr] items-center gap-4 text-xs;
     }
 
     .top-bar__progress {
         @apply absolute inset-x-0 bottom-0 h-0.5 origin-left bg-accent;
         transform: scaleX(0);
         will-change: transform;
+    }
+
+    /* Three-way theme switch: Dark, Light, Screen (follow the OS).
+       `aria-pressed` is kept in sync by initTheme(). */
+    .theme-toggle {
+        @apply inline-flex shrink-0 items-center border border-line;
+    }
+
+    .theme-toggle__btn {
+        @apply grid h-8 w-8 place-items-center border-r border-line text-muted transition-colors duration-300 last:border-r-0 hover:text-accent;
+    }
+
+    .theme-toggle__btn[aria-pressed='true'] {
+        @apply bg-accent-soft text-accent;
     }
 
     /* ------------------------------------------------------------

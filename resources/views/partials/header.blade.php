@@ -7,7 +7,6 @@
         'projects' => ['label' => 'Projects', 'route' => 'projects.index'],
         'portfolio' => ['label' => 'Portfolio', 'route' => 'portfolio.index'],
         'blog' => ['label' => 'Blog', 'route' => 'blog.index'],
-        'requirements' => ['label' => 'Requirements', 'route' => 'requirements.create'],
         'contact' => ['label' => 'Contact', 'route' => 'contact.create'],
     ];
 
@@ -20,15 +19,6 @@
 
 <header data-site-header class="site-header">
     <div class="site-header__bar">
-        <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-3" aria-label="{{ config('app.name') }} home">
-            <span class="grid h-10 w-10 place-items-center border border-line font-display text-lg tracking-normal text-accent">
-                A
-            </span>
-            <span class="hidden font-display text-lg tracking-[0.22em] text-white uppercase sm:inline">
-                Agape<span class="text-accent">Infosys</span>
-            </span>
-        </a>
-
         <nav class="hidden items-center gap-4 xl:flex" aria-label="Primary">
             @foreach ($navItems as $key => $item)
                 <a
@@ -73,7 +63,7 @@
             </svg>
 
             @if ($cartCount > 0)
-                <span class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center bg-accent px-1 font-display text-[10px] leading-none text-white">
+                <span class="absolute -top-1.5 -right-1.5 grid h-4 min-w-4 place-items-center bg-accent px-1 font-display text-[10px] leading-none text-on-accent">
                     {{ $cartCount }}
                 </span>
             @endif

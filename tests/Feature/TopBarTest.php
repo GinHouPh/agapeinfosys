@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class TopBarTest extends TestCase
@@ -45,6 +46,49 @@ class TopBarTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('data-scroll-progress', false);
+    }
+
+    public function test_the_bottom_menu_drops_requirements_and_the_logo_moves_to_the_top_bar(): void
+    {
+        $html = $this->get(route('home'))->assertOk()->getContent();
+
+        $topBar = Str::before($html, '<header data-site-header');
+        $bottomBar = Str::between($html, '<header data-site-header', '</header>');
+
+        // The bottom menu stays lean: no redundant quote entry (the top
+        // bar owns that CTA) and no logo (also the top bar's job now).
+        $this->assertStringNotContainsString('Requirements', $bottomBar);
+        $this->assertStringNotContainsString('aria-label="'.config('app.name').' home"', $bottomBar);
+
+        // The logo is served from the centre of the top utility bar.
+        $this->assertStringContainsString('aria-label="'.config('app.name').' home"', $topBar);
+    }
+
+    public function test_the_top_bar_hosts_a_three_way_theme_toggle(): void
+    {
+        $response = $this->get(route('home'))->assertOk();
+
+        $topBar = Str::before($response->getContent(), '<header data-site-header');
+
+        $this->assertStringContainsString('aria-label="Colour theme"', $topBar);
+
+        foreach (['dark', 'light', 'system'] as $mode) {
+            $this->assertStringContainsString("data-theme-choice=\"$mode\"", $topBar);
+        }
+
+        // The layout bootstraps the stored preference before first paint.
+        $response->assertSee("localStorage.getItem('theme')", false);
+    }
+
+    public function test_the_admin_shell_keeps_its_own_dark_theme(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertDontSee('data-theme-choice', false)
+            ->assertDontSee("localStorage.getItem('theme')", false);
     }
 
     public function test_the_top_bar_appears_on_public_pages_but_not_in_the_admin(): void
