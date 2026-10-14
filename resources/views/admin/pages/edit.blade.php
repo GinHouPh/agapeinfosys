@@ -67,6 +67,10 @@
         .pb-device button:first-child { border-left: 0; }
         .pb-device button:hover { color: var(--color-headline); }
         .pb-device button.is-on { background: var(--color-accent); color: #fff; }
+        /* The canvas copy sits in a header, not a form column: no rhythm to
+           keep, and a touch smaller so it doesn't outweigh the count. */
+        .pb-device--preview { margin-bottom: 0; border-color: var(--color-line); }
+        .pb-device--preview button { padding: 5px 10px; }
         .pb-chip { display: inline-block; margin-top: 4px; padding: 1px 5px; border: 1px solid var(--color-line); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-accent); }
         .pb-history button { padding: 4px 9px; line-height: 1.4; transition: color .15s, border-color .15s; }
         .pb-history button[disabled] { opacity: .3; cursor: not-allowed; }
@@ -189,9 +193,16 @@
 
     {{-- Canvas --}}
     <div class="min-w-0">
-        <div class="mb-3 flex items-center justify-between">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h2 class="font-display text-xs tracking-[0.24em] text-muted uppercase">Canvas</h2>
-            <span id="pb-count" class="text-xs text-muted"></span>
+            <div class="flex items-center gap-3">
+                <div class="pb-device pb-device--preview m-0" role="group" aria-label="Preview at">
+                    <button type="button" data-preview-device="desktop" aria-pressed="true" class="is-on" title="Full width">Desktop</button>
+                    <button type="button" data-preview-device="tablet" aria-pressed="false" title="768px">Tablet</button>
+                    <button type="button" data-preview-device="mobile" aria-pressed="false" title="390px">Mobile</button>
+                </div>
+                <span id="pb-count" class="text-xs text-muted"></span>
+            </div>
         </div>
         <div id="pb-canvas" class="pb-canvas border border-line"></div>
     </div>
@@ -291,12 +302,15 @@
     let selectedId = null;
     // Column the palette drops into when a multi-column section is selected.
     let activeColumn = 0;
-    // Which tier of a responsive control the panel edits. It stays put as you
-    // move between blocks, the way a device choice does in the preview it will
-    // one day drive; widgets with nothing responsive simply ignore it.
+    // Which device the editor is working at. It picks the tier of a responsive
+    // control the panel edits *and* the width the canvas is held to, so what
+    // you set is what you are looking at — two faces of one choice, never able
+    // to disagree. It stays put as you move between blocks, and is remembered
+    // across sessions the way any workspace preference would be.
     const deviceTiers = @json(\App\Builder\Device::TIERS);
     const deviceSuffix = @json(\App\Builder\Device::SUFFIX);
-    let panelDevice = deviceTiers[0];
+    const savedDevice = (() => { try { return localStorage.getItem('pb-device'); } catch (_) { return null; } })();
+    let device = deviceTiers.indexOf(savedDevice) === -1 ? deviceTiers[0] : savedDevice;
     const schemaCache = {};
     let flashTimer = null;
 
@@ -598,6 +612,105 @@
         if (row) selectBlock(row.dataset.treeId);
     });
 
+    // --- Device preview ----------------------------------------------------
+    /**
+     * What the canvas is held at for each device, and the variants that have to
+     * come off the markup for it to read correctly at that width.
+     *
+     * The canvas is a div in the admin page, so no media query ever notices how
+     * wide it is. Tailwind is mobile-first though, and so is our own markup: a
+     * bare utility is the narrow tier, `md:` starts at 768, `lg:` at 1024. The
+     * classes therefore already say which tier each one belongs to, so dropping
+     * the ones that would not have matched leaves exactly what a real viewport
+     * of that width would render.
+     *
+     * Desktop is left alone for the opposite reason: the real viewport is
+     * already driving it, and `md:`/`lg:` are doing their genuine job.
+     *
+     * One honest gap: `max-*` variants answer to the real viewport, not to the
+     * canvas, so a `max-md:` rule cannot be *switched on* for the mobile view
+     * by removing classes. Where the real viewport is wide they are already
+     * correctly off for tablet; they simply stay off.
+     */
+    const PREVIEW = {
+        desktop: { width: null, drop: [], dropMax: [] },
+        tablet: { width: 768, drop: ['lg:', 'xl:', '2xl:'], dropMax: ['max-sm:', 'max-md:'] },
+        mobile: { width: 390, drop: ['sm:', 'md:', 'lg:', 'xl:', '2xl:'], dropMax: [] },
+    };
+
+    /** Section rhythm follows the width, so the canvas is told which tier to inherit. */
+    function rhythmFor(tier) {
+        const token = tier === 'tablet' ? '--spacing-section-tablet' : '--spacing-section-mobile';
+        return getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+    }
+
+    /**
+     * Hold the canvas at the current device: its width, the vertical rhythm that
+     * goes with that width, and the responsive variants the markup sheds there.
+     *
+     * Purely a display transform. The canvas holds a copy of each block's
+     * server-rendered HTML — `block.html` is never touched — so nothing here
+     * can leak into a save.
+     */
+    function applyDevicePreview() {
+        const cfg = PREVIEW[device] || PREVIEW.desktop;
+
+        canvas.style.width = cfg.width ? `${cfg.width}px` : '';
+        canvas.style.maxWidth = cfg.width ? '100%' : '';
+        canvas.style.marginInline = cfg.width ? 'auto' : '';
+
+        const rhythm = cfg.width ? rhythmFor(device) : '';
+        if (rhythm) canvas.style.setProperty('--section-y', rhythm);
+        else canvas.style.removeProperty('--section-y');
+
+        const drop = cfg.drop.concat(cfg.dropMax);
+        if (!drop.length) return;
+
+        canvas.querySelectorAll('[class]').forEach((el) => {
+            const current = el.getAttribute('class');
+            if (!current) return;
+            const parts = current.split(/\s+/).filter(Boolean);
+            const kept = parts.filter((c) => !drop.some((p) => c.startsWith(p)));
+            if (kept.length !== parts.length) el.setAttribute('class', kept.join(' '));
+        });
+    }
+
+    /**
+     * Switch the device the editor is working at. The panel retargets the tier
+     * it edits and the canvas takes the width that tier renders at; both faces
+     * read the same state, so neither can drift from the other.
+     */
+    function setDevice(tier) {
+        if (device === tier || deviceTiers.indexOf(tier) === -1) return;
+        device = tier;
+        try { localStorage.setItem('pb-device', tier); } catch (_) { /* private mode */ }
+
+        syncPreviewButtons();
+
+        // The transform strips classes, so it can only ever be applied to
+        // fresh markup. Rebuilding the canvas recopies each block's
+        // server-rendered HTML, which is what puts the variants back when you
+        // widen out again.
+        renderCanvas();
+
+        // The panel only needs rebuilding when it has a tier to show; a widget
+        // with nothing responsive has no reason to lose the field you're in.
+        if (panel.querySelector('.pb-device')) renderPanel();
+    }
+
+    /**
+     * Put the canvas switcher in step with the state. The panel's copy is
+     * rebuilt by renderPanel(), but this one is part of the page and only
+     * exists once, so it is painted here.
+     */
+    function syncPreviewButtons() {
+        document.querySelectorAll('[data-preview-device]').forEach((btn) => {
+            const on = btn.dataset.previewDevice === device;
+            btn.classList.toggle('is-on', on);
+            btn.setAttribute('aria-pressed', String(on));
+        });
+    }
+
     // --- Canvas ------------------------------------------------------------
     function renderCanvas() {
         // The drawer reads the same tree, so it is kept in step here rather
@@ -609,10 +722,13 @@
         countEl.textContent = total === 1 ? '1 section' : `${total} sections`;
         if (blocks.length === 0) {
             canvas.innerHTML = '<div class="pb-empty">No sections yet — add one from the palette on the left.</div>';
+            applyDevicePreview();
             return;
         }
         canvas.innerHTML = '';
         blocks.forEach((b) => canvas.appendChild(buildBlockEl(b)));
+        // Last, because it rewrites classes the block bodies just brought in.
+        applyDevicePreview();
     }
 
     function buildBlockEl(block) {
@@ -988,6 +1104,10 @@
 
             const wrap = canvas.querySelector(`[data-id="${CSS.escape(block.id)}"] > .pb-block-body`);
             if (wrap) wrap.innerHTML = block.html;
+
+            // Fresh markup from the server carries its full responsive set
+            // again, so put the preview back over it.
+            applyDevicePreview();
         } catch (_) { /* ignore */ }
     }
 
@@ -1030,7 +1150,7 @@
         // switch: it picks which tier of a responsive control the panel edits.
         const switcher = schema.controls.some((c) => c.responsive)
             ? `<div class="pb-device" role="group" aria-label="Device tier">${deviceTiers.map((t) => {
-                const on = panelDevice === t;
+                const on = device === t;
                 const label = t.charAt(0).toUpperCase() + t.slice(1);
                 return `<button type="button" data-device="${esc(t)}" aria-pressed="${on}"${on ? ' class="is-on"' : ''}>${esc(label)}</button>`;
             }).join('')}</div>`
@@ -1043,11 +1163,7 @@
             ${switcher}
             <div id="pb-controls">${schema.controls.map((c) => controlHtml(c, block.settings)).join('')}</div>`;
         panel.querySelectorAll('[data-device]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                if (panelDevice === btn.dataset.device) return;
-                panelDevice = btn.dataset.device;
-                renderPanel();
-            });
+            btn.addEventListener('click', () => setDevice(btn.dataset.device));
         });
         // Sub-fields inside a repeater carry `data-sub` instead of `data-key`;
         // both drive the same mutation, so both need the listener. Image
@@ -1071,7 +1187,7 @@
         // A responsive control reads the tier the panel is editing. Desktop is
         // the base key itself; the other tiers are the siblings beside it, and
         // a tier with no sibling of its own inherits from desktop.
-        const tier = c.responsive ? panelDevice : 'desktop';
+        const tier = c.responsive ? device : 'desktop';
         const storageKey = tier === 'desktop' ? key : key + (deviceSuffix[tier] || '');
         const hasOverride = tier === 'desktop' || Object.prototype.hasOwnProperty.call(settings, storageKey);
         const val = hasOverride ? settings[storageKey] : settings[key];
@@ -1163,7 +1279,7 @@
             return;
         } else if (key) {
             const field = controls.find((c) => c.key === key);
-            const tier = field && field.responsive ? panelDevice : 'desktop';
+            const tier = field && field.responsive ? device : 'desktop';
             const storageKey = tier === 'desktop' ? key : key + (deviceSuffix[tier] || '');
 
             if (tier !== 'desktop' && el.value === '') {
@@ -1318,6 +1434,14 @@
     // --- Undo / redo -------------------------------------------------------
     document.getElementById('pb-undo').addEventListener('click', undo);
     document.getElementById('pb-redo').addEventListener('click', redo);
+
+    // --- Device preview ----------------------------------------------------
+    document.querySelectorAll('[data-preview-device]').forEach((btn) => {
+        btn.addEventListener('click', () => setDevice(btn.dataset.previewDevice));
+    });
+    // A device remembered from last time is already holding the canvas by the
+    // time renderCanvas() runs below; only the switcher still reads Desktop.
+    syncPreviewButtons();
 
     // --- Keyboard shortcuts ------------------------------------------------
     const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent);
