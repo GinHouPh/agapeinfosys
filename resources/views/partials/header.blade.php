@@ -19,13 +19,14 @@
 
 <header data-site-header class="site-header">
     <div class="site-header__bar">
-        <nav class="hidden items-center gap-4 xl:flex" aria-label="Primary">
+        <nav class="hidden items-center gap-2 xl:flex" aria-label="Primary">
             @foreach ($navItems as $key => $item)
                 <a
                     href="{{ route($item['route']) }}"
-                    class="nav-link {{ request()->routeIs($item['route']) ? 'is-active' : '' }}"
+                    class="nav-item {{ request()->routeIs($item['route']) ? 'is-active' : '' }}"
                 >
-                    {{ $item['label'] }}
+                    <x-nav-icon :name="$key" />
+                    <span class="nav-item__label">{{ $item['label'] }}</span>
                 </a>
             @endforeach
         </nav>

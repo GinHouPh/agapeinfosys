@@ -506,25 +506,56 @@ html.light {
         @apply opacity-100 visible;
     }
 
-    .nav-link {
-        @apply relative font-body text-base font-normal text-white transition-colors duration-300;
-        letter-spacing: 0.02em;
-        text-transform: capitalize;
+    /* ------------------------------------------------------------
+       Floating bottom menu — icon-first links. Each item shows just
+       its glyph; the label slides open on hover, and the current page
+       keeps it open inside a rounded chip coloured by the theme's own
+       background/foreground tokens (so it flips in light mode).
+       ------------------------------------------------------------ */
+    .nav-item {
+        @apply flex h-10 shrink-0 items-center border border-line text-white;
+        padding-inline: 10px;
+        transition:
+            padding 300ms ease,
+            border-radius 300ms ease,
+            color 300ms ease,
+            border-color 300ms ease,
+            background-color 300ms ease;
     }
 
-    .nav-link::after {
-        content: '';
-        @apply absolute -bottom-1 left-0 h-px w-0 bg-accent transition-all duration-300;
+    .nav-item:hover,
+    .nav-item:focus-visible {
+        @apply border-accent text-accent;
+        padding-inline: 14px;
     }
 
-    .nav-link:hover,
-    .nav-link.is-active {
-        @apply text-accent;
+    .nav-item.is-active {
+        @apply border-transparent bg-white text-ink;
+        padding-inline: 14px;
+        border-radius: 0.5rem;
     }
 
-    .nav-link:hover::after,
-    .nav-link.is-active::after {
-        @apply w-full;
+    .nav-item.is-active:hover {
+        @apply text-ink;
+    }
+
+    .nav-item__label {
+        @apply overflow-hidden font-display text-[11px] tracking-[0.2em] whitespace-nowrap uppercase;
+        max-width: 0;
+        opacity: 0;
+        margin-left: 0;
+        transition:
+            max-width 300ms ease,
+            opacity 250ms ease,
+            margin-left 300ms ease;
+    }
+
+    .nav-item:hover .nav-item__label,
+    .nav-item:focus-visible .nav-item__label,
+    .nav-item.is-active .nav-item__label {
+        max-width: 10rem;
+        opacity: 1;
+        margin-left: 0.5rem;
     }
 
     /* ------------------------------------------------------------
