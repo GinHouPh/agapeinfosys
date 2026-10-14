@@ -71,6 +71,12 @@
            keep, and a touch smaller so it doesn't outweigh the count. */
         .pb-device--preview { margin-bottom: 0; border-color: var(--color-line); }
         .pb-device--preview button { padding: 5px 10px; }
+        /* A token picker: the select names the token, the square shows what it
+           resolves to right now — which is the theme's answer, not a hex kept
+           beside the name. */
+        .pb-color { position: relative; }
+        .pb-color select { padding-right: 34px; }
+        .pb-color-swatch { position: absolute; top: 50%; right: 12px; width: 14px; height: 14px; border: 1px solid var(--color-line); pointer-events: none; }
         .pb-chip { display: inline-block; margin-top: 4px; padding: 1px 5px; border: 1px solid var(--color-line); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-accent); }
         .pb-history button { padding: 4px 9px; line-height: 1.4; transition: color .15s, border-color .15s; }
         .pb-history button[disabled] { opacity: .3; cursor: not-allowed; }
@@ -309,6 +315,9 @@
     // across sessions the way any workspace preference would be.
     const deviceTiers = @json(\App\Builder\Device::TIERS);
     const deviceSuffix = @json(\App\Builder\Device::SUFFIX);
+    // The palette a colour control picks from. Injected rather than typed out
+    // here so the sanitizer, the panel and the widgets all speak one list.
+    const colorTokens = @json(\App\Builder\DesignTokens::COLORS);
     const savedDevice = (() => { try { return localStorage.getItem('pb-device'); } catch (_) { return null; } })();
     let device = deviceTiers.indexOf(savedDevice) === -1 ? deviceTiers[0] : savedDevice;
     const schemaCache = {};
@@ -1117,6 +1126,37 @@
     }
 
     // --- Settings panel ----------------------------------------------------
+    /**
+     * Fill each token swatch from the document's live custom property, so the
+     * picker shows the colour the page will actually use.
+     *
+     * Reading it back rather than keeping a hex beside the name is what makes
+     * the swatch honest under the light theme: the same token resolves to a
+     * different value there, and so does the square in the panel.
+     */
+    function paintTokenSwatches(root) {
+        root.querySelectorAll('[data-swatch]').forEach((el) => {
+            const select = root.querySelector(`select[data-key="${CSS.escape(el.dataset.swatch)}"]`);
+            const name = select ? select.value : '';
+            const value = getComputedStyle(document.documentElement).getPropertyValue(`--color-${name}`).trim();
+            el.style.background = value || 'transparent';
+            el.title = name ? `--color-${name}` : '';
+        });
+    }
+
+    /**
+     * Give a panel's token swatches their repaint-on-change wiring, then paint
+     * them once. Kept apart from the painting above so the theme observer can
+     * repaint without stacking a listener on every toggle.
+     */
+    function bindTokenSwatches(root) {
+        root.querySelectorAll('[data-swatch]').forEach((el) => {
+            const select = root.querySelector(`select[data-key="${CSS.escape(el.dataset.swatch)}"]`);
+            if (select) select.addEventListener('change', () => paintTokenSwatches(root));
+        });
+        paintTokenSwatches(root);
+    }
+
     async function renderPanel() {
         const block = byId(selectedId);
         if (!block) {
@@ -1174,6 +1214,7 @@
             const ev = el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input';
             el.addEventListener(ev, () => onControlChange(el, block, schema.controls));
         });
+        bindTokenSwatches(panel);
         applyConditions(panel, block.settings);
     }
 
@@ -1216,6 +1257,12 @@
             const shown = hasOverride ? val : '';
             const inherit = canInherit ? `<option value=""${hasOverride ? '' : ' selected'}>Automatic</option>` : '';
             input = `<select class="input" data-key="${esc(key)}">${inherit}${Object.entries(c.options || {}).map(([ov, ol]) => `<option value="${esc(ov)}"${String(shown) === String(ov) ? ' selected' : ''}>${esc(ol)}</option>`).join('')}</select>`;
+        } else if (c.type === 'color') {
+            // A colour is the NAME of a design token, not a colour value: the
+            // options come from the same list the sanitizer checks against,
+            // and the swatch reads the token back off the document, so the
+            // picker repaints with the light theme exactly as the page will.
+            input = `<div class="pb-color"><select class="input" data-key="${esc(key)}">${Object.entries(colorTokens).map(([tv, tl]) => `<option value="${esc(tv)}"${String(val) === String(tv) ? ' selected' : ''}>${esc(tl)}</option>`).join('')}</select><span class="pb-color-swatch" data-swatch="${esc(key)}"></span></div>`;
         } else if (c.type === 'toggle') {
             input = `<label class="flex cursor-pointer items-center gap-3 border border-line p-3 has-[:checked]:border-accent"><input type="checkbox" data-key="${esc(key)}" class="h-4 w-4 accent-accent"${val ? ' checked' : ''}><span class="text-sm text-white">On</span></label>`;
         } else if (c.type === 'number') {
@@ -1442,6 +1489,13 @@
     // A device remembered from last time is already holding the canvas by the
     // time renderCanvas() runs below; only the switcher still reads Desktop.
     syncPreviewButtons();
+
+    // The theme toggle re-declares the same custom properties on the root, so
+    // the token swatches move without any input event to tell them apart from
+    // a repaint. Watching the root's class is what keeps the picker's own
+    // answer in step with the page's.
+    new MutationObserver(() => paintTokenSwatches(panel))
+        .observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
     // --- Keyboard shortcuts ------------------------------------------------
     const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent);

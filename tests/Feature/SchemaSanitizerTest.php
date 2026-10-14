@@ -184,4 +184,29 @@ class SchemaSanitizerTest extends TestCase
 
         $this->assertSame('', $blocks[0]['settings']['button_url']);
     }
+
+    public function test_a_color_control_keeps_a_known_token_by_name(): void
+    {
+        $settings = $this->settingsFor('statement', ['accent_color' => 'muted']);
+
+        $this->assertSame('muted', $settings['accent_color']);
+    }
+
+    public function test_a_color_control_falls_back_when_the_value_is_not_a_token(): void
+    {
+        // A hex, a functional notation and a stray word are all what an author
+        // would reach for if the control offered a colour well. None of them
+        // name a custom property, so none of them can bind to anything; the
+        // point of storing a token is that the theme can repaint it.
+        $this->assertSame('accent', $this->settingsFor('statement', ['accent_color' => '#d90429'])['accent_color']);
+        $this->assertSame('accent', $this->settingsFor('statement', ['accent_color' => 'rgb(217, 4, 41)'])['accent_color']);
+        $this->assertSame('accent', $this->settingsFor('statement', ['accent_color' => 'brand-red'])['accent_color']);
+        $this->assertSame('accent', $this->settingsFor('statement', ['accent_color' => ''])['accent_color']);
+        $this->assertSame('accent', $this->settingsFor('statement', ['accent_color' => ['accent']])['accent_color']);
+    }
+
+    public function test_a_color_control_defaults_when_the_key_is_absent(): void
+    {
+        $this->assertSame('accent', $this->settingsFor('statement', [])['accent_color']);
+    }
 }

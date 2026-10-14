@@ -67,7 +67,7 @@ class WidgetLibraryTest extends TestCase
 
                 $this->assertNotEmpty($control['key'], "Widget [{$name}] has a control without a key.");
                 $this->assertNotEmpty($control['label'], "Widget [{$name}] control [{$control['key']}] needs a label.");
-                $this->assertContains($control['type'], ['text', 'textarea', 'number', 'select', 'toggle', 'image', 'url', 'repeater', 'heading'],
+                $this->assertContains($control['type'], ['text', 'textarea', 'number', 'select', 'toggle', 'image', 'url', 'color', 'repeater', 'heading'],
                     "Widget [{$name}] control [{$control['key']}] has an unknown type.");
 
                 if ($control['type'] === 'select') {
@@ -147,6 +147,34 @@ class WidgetLibraryTest extends TestCase
 
         $this->assertStringContainsString('Safe', $html);
         $this->assertStringNotContainsString('<script>', $html);
+    }
+
+    public function test_a_color_control_renders_the_token_the_author_chose(): void
+    {
+        $renderer = app(PageRenderer::class);
+
+        // Each token has to resolve to a real utility, not to nothing: the
+        // view spells them as a literal map because Tailwind will not build a
+        // class it never sees written out.
+        $this->assertStringContainsString(
+            'text-muted',
+            $renderer->renderBlock('statement', ['accent' => 'Lead', 'accent_color' => 'muted']),
+        );
+        $this->assertStringContainsString(
+            'text-headline',
+            $renderer->renderBlock('statement', ['accent' => 'Lead', 'accent_color' => 'headline']),
+        );
+    }
+
+    public function test_an_unknown_color_falls_back_to_the_accent_rather_than_inheriting(): void
+    {
+        $html = app(PageRenderer::class)->renderBlock('statement', [
+            'accent' => 'Lead',
+            'accent_color' => 'not-a-token',
+        ]);
+
+        $this->assertStringContainsString('text-accent', $html);
+        $this->assertStringNotContainsString('text-not-a-token', $html);
     }
 
     public function test_the_manifest_drives_the_palette(): void

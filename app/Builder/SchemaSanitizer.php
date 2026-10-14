@@ -180,6 +180,7 @@ class SchemaSanitizer
             'number' => is_numeric($value) ? $value + 0 : 0,
             'toggle' => filter_var($value, FILTER_VALIDATE_BOOL),
             'select' => $this->coerceSelect($control, $value),
+            'color' => $this->coerceColor($control, $value),
             'url' => $this->coerceUrl($value),
             'repeater' => $this->coerceRepeater($control, $value),
             default => is_scalar($value) ? (string) $value : '',
@@ -202,6 +203,29 @@ class SchemaSanitizer
         }
 
         return (string) ($control['default'] ?? (array_key_first($options) ?? ''));
+    }
+
+    /**
+     * A colour is the name of a design token, never a colour value.
+     *
+     * Keeping the name rather than a hex is what lets the light theme repaint
+     * the widget and a rebrand reach it at all: the view binds the name to the
+     * matching `--color-*` property, so the value resolves at render time.
+     * Anything that is not a known token binds to nothing and would render as
+     * whatever the element inherits, so it falls back to the default instead
+     * of being stored as a value nobody picked.
+     *
+     * @param  array<string, mixed>  $control
+     */
+    private function coerceColor(array $control, mixed $value): string
+    {
+        if (DesignTokens::isColor($value)) {
+            return $value;
+        }
+
+        return DesignTokens::isColor($control['default'] ?? null)
+            ? (string) $control['default']
+            : DesignTokens::FALLBACK;
     }
 
     /**

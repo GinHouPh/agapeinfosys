@@ -25,6 +25,13 @@ class StatementWidget extends GenericWidget
                     'help' => 'Rendered in the accent colour at the start of the line.',
                 ],
                 [
+                    'key' => 'accent_color',
+                    'label' => 'Lead colour',
+                    'type' => 'color',
+                    'default' => 'accent',
+                    'help' => 'A design token, so the lead repaints with the theme instead of being frozen into the page.',
+                ],
+                [
                     'key' => 'text',
                     'label' => 'Statement',
                     'type' => 'textarea',

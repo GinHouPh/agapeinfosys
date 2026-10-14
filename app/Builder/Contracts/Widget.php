@@ -40,13 +40,19 @@ interface Widget
      * [
      *     'key'       => string,
      *     'label'     => string,
-     *     'type'      => text|textarea|number|select|toggle|image|url|repeater,
+     *     'type'      => text|textarea|number|select|toggle|image|url|color|repeater,
      *     'default'   => mixed,
      *     'options'   => [value => label],          // select
      *     'fields'    => [control, ...],            // repeater row fields
      *     'condition' => [key => expected, ...],    // show only when matching
      *     'help'      => string,
      * ]
+     *
+     * A `color` control stores the NAME of a design token (see
+     * DesignTokens::COLORS) rather than a colour value, so the page repaints
+     * with the theme and a rebrand reaches it. It takes no `options`: the
+     * palette belongs to the sanitizer, and a widget spelling out its own
+     * would be a second list to keep in step.
      *
      * @return array<int, array<string, mixed>>
      */
