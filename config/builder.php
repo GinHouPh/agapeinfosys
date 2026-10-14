@@ -26,6 +26,10 @@ return [
         'blog' => 'blog.index',
         'requirements' => 'requirements.create',
         'contact' => 'contact.create',
+        'privacy-policy' => 'legal.privacy',
+        'terms-and-conditions' => 'legal.terms',
+        'cancellation-and-refunds' => 'legal.refunds',
+        'delivery-policy' => 'legal.delivery',
     ],
 
     /*

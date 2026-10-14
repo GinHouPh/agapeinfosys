@@ -4,7 +4,7 @@
 @section('heading', 'Dashboard')
 
 @section('content')
-    <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
         @foreach ($counts as $count)
             <a href="{{ route($count['route']) }}" class="admin-card group transition-colors duration-300 hover:border-accent">
                 <span class="block font-display text-5xl text-white group-hover:text-accent">

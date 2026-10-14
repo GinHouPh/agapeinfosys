@@ -40,6 +40,9 @@
                 <x-admin-link :href="route('admin.messages.index')" :active="request()->routeIs('admin.messages.*')" label="Messages" />
                 <x-admin-link :href="route('admin.submissions.index')" :active="request()->routeIs('admin.submissions.*')" label="Submissions" />
 
+                <p class="px-4 pt-6 pb-2 font-display text-[11px] tracking-[0.24em] text-muted uppercase">Clients</p>
+                <x-admin-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')" label="Client Accounts" />
+
                 <p class="px-4 pt-6 pb-2 font-display text-[11px] tracking-[0.24em] text-muted uppercase">Commerce</p>
                 <x-admin-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')" label="Products" />
                 <x-admin-link :href="route('admin.plans.index')" :active="request()->routeIs('admin.plans.*')" label="Plans" />

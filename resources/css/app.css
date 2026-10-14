@@ -394,14 +394,64 @@
     }
 
     /* ------------------------------------------------------------
-       Header / navigation
+       Top utility bar — contact + quote + account, with a scroll
+       progress line riding its bottom edge. Sticky (not fixed) so it
+       holds its place in flow and never overlaps hero content.
        ------------------------------------------------------------ */
-    .site-header {
-        @apply fixed inset-x-0 top-0 z-50 h-20 transition-all duration-300;
+    .top-bar {
+        @apply sticky top-0 z-40 border-b border-line bg-ink/95 backdrop-blur;
+        padding-top: env(safe-area-inset-top);
     }
 
-    .site-header.is-stuck {
-        @apply bg-ink/95 shadow-[0_1px_0_0_var(--color-line)] backdrop-blur;
+    .top-bar__inner {
+        @apply flex h-10 items-center justify-between gap-4 text-xs;
+    }
+
+    .top-bar__progress {
+        @apply absolute inset-x-0 bottom-0 h-0.5 origin-left bg-accent;
+        transform: scaleX(0);
+        will-change: transform;
+    }
+
+    /* ------------------------------------------------------------
+       Header / navigation — a floating bar docked at the bottom so the
+       page opens with content, not chrome. The body reserves matching
+       space at the end of the document (see .site-body) so nothing is
+       ever hidden behind the menu.
+       ------------------------------------------------------------ */
+    .site-header {
+        @apply fixed inset-x-0 bottom-0 z-50 px-4;
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    }
+
+    .site-header__bar {
+        @apply mx-auto flex h-16 w-full max-w-content items-center gap-3 border border-line bg-ink/95 px-4 backdrop-blur sm:px-5 lg:gap-5;
+    }
+
+    /* Reserves room at the end of every public page for the floating menu */
+    .site-body {
+        padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+
+    .icon-btn {
+        @apply relative grid h-10 w-10 shrink-0 place-items-center border border-line text-white transition-colors duration-300 hover:border-accent hover:text-accent;
+    }
+
+    .nav-panel {
+        @apply fixed inset-0 -z-10 flex flex-col justify-end overflow-y-auto bg-ink px-6 pt-8 opacity-0 invisible transition-all duration-300 xl:hidden;
+        padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+    }
+
+    .nav-panel.is-open {
+        @apply opacity-100 visible;
+    }
+
+    .search-overlay {
+        @apply fixed inset-0 z-[60] flex flex-col items-center justify-center bg-ink/95 px-6 opacity-0 invisible transition-all duration-300 backdrop-blur;
+    }
+
+    .search-overlay.is-open {
+        @apply opacity-100 visible;
     }
 
     .nav-link {

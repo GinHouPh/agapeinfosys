@@ -21,13 +21,23 @@ use App\Http\Controllers\Admin\ShopOrderController as AdminShopOrderController;
 use App\Http\Controllers\Admin\ShowcaseProjectController as AdminShowcaseProjectController;
 use App\Http\Controllers\Admin\SubscriptionController as AdminSubscriptionController;
 use App\Http\Controllers\Admin\TestimonialController as AdminTestimonialController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Auth\LoginController as ClientLoginController;
+use App\Http\Controllers\Auth\RegisterController as ClientRegisterController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\Dashboard\DashboardController as ClientDashboardController;
+use App\Http\Controllers\Dashboard\EntitlementController as DashboardEntitlementController;
+use App\Http\Controllers\Dashboard\OrderController as DashboardOrderController;
+use App\Http\Controllers\Dashboard\ProfileController as DashboardProfileController;
+use App\Http\Controllers\Dashboard\SubscriptionController as DashboardSubscriptionController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\PageController as PageBuilderPageController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\Shop\CartController as ShopCartController;
 use App\Http\Controllers\Shop\CheckoutController as ShopCheckoutController;
@@ -67,6 +77,12 @@ Route::get('/blog', [PostController::class, 'index'])->name('blog.index');
 Route::get('/blog/{post:slug}', [PostController::class, 'show'])->name('blog.show');
 
 /*
+| Site search across published services, case studies, articles and
+| products. Registered before the root-level {product} catch-all.
+*/
+Route::get('/search', [SearchController::class, 'index'])->name('search.index');
+
+/*
 | Builder-managed pages. Registered before the root-level {product}
 | catch-all so a landing page slug is never shadowed by a product.
 */
@@ -76,6 +92,52 @@ Route::get('/contact', [ContactController::class, 'create'])->name('contact.crea
 Route::post('/contact', [ContactController::class, 'store'])
     ->middleware('throttle:6,1')
     ->name('contact.store');
+
+/*
+| Legal pages. Each one is editable in the page builder under its reserved
+| slug and falls back to the hand-built policy view until published.
+*/
+Route::get('/privacy-policy', [LegalController::class, 'privacy'])->name('legal.privacy');
+Route::get('/terms-and-conditions', [LegalController::class, 'terms'])->name('legal.terms');
+Route::get('/cancellation-and-refunds', [LegalController::class, 'refunds'])->name('legal.refunds');
+Route::get('/delivery-policy', [LegalController::class, 'delivery'])->name('legal.delivery');
+
+/*
+|--------------------------------------------------------------------------
+| Client accounts — sign in, register, manage purchases
+|--------------------------------------------------------------------------
+|
+| Clients are non-admin users. Orders are recorded against the email used
+| at checkout, so an account sees every purchase made with its address.
+|
+*/
+Route::get('/login', [ClientLoginController::class, 'create'])->name('login');
+Route::post('/login', [ClientLoginController::class, 'store'])
+    ->middleware('throttle:6,1')
+    ->name('login.attempt');
+Route::get('/register', [ClientRegisterController::class, 'create'])->name('register');
+Route::post('/register', [ClientRegisterController::class, 'store'])
+    ->middleware('throttle:3,1')
+    ->name('register.store');
+
+Route::prefix('dashboard')->middleware('auth')->group(function (): void {
+    Route::post('/logout', [ClientLoginController::class, 'destroy'])->name('logout');
+
+    Route::get('/', [ClientDashboardController::class, 'index'])->name('dashboard.index');
+
+    Route::get('/orders', [DashboardOrderController::class, 'index'])->name('dashboard.orders.index');
+    Route::get('/orders/{order}', [DashboardOrderController::class, 'show'])->name('dashboard.orders.show');
+
+    Route::get('/subscriptions', [DashboardSubscriptionController::class, 'index'])->name('dashboard.subscriptions.index');
+    Route::post('/subscriptions/{subscription}/cancel', [DashboardSubscriptionController::class, 'cancel'])
+        ->name('dashboard.subscriptions.cancel');
+
+    Route::get('/access', [DashboardEntitlementController::class, 'index'])->name('dashboard.access.index');
+
+    Route::get('/profile', [DashboardProfileController::class, 'edit'])->name('dashboard.profile.edit');
+    Route::put('/profile', [DashboardProfileController::class, 'update'])->name('dashboard.profile.update');
+    Route::put('/password', [DashboardProfileController::class, 'updatePassword'])->name('dashboard.password.update');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -112,6 +174,11 @@ Route::prefix('admin')->group(function (): void {
         Route::resource('showcase-projects', AdminShowcaseProjectController::class, ['as' => 'admin'])->except('show');
         Route::resource('posts', AdminPostController::class, ['as' => 'admin'])->except('show');
         Route::resource('testimonials', AdminTestimonialController::class, ['as' => 'admin'])->except('show');
+
+        /*
+        | Client/user management — the accounts behind the client dashboard
+        */
+        Route::resource('users', AdminUserController::class, ['as' => 'admin']);
 
         Route::get('messages', [MessageController::class, 'index'])->name('admin.messages.index');
         Route::get('messages/{message}', [MessageController::class, 'show'])->name('admin.messages.show');

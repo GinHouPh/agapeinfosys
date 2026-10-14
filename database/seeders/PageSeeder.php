@@ -92,6 +92,30 @@ class PageSeeder extends Seeder
             'meta_description' => 'The more detail you share, the sharper our quotation. Fill in the brief below — it takes about five minutes.',
         ]);
 
+        $this->seedPage($this->privacyPolicySchema(), [
+            'title' => 'Privacy Policy | Agape Infosys',
+            'slug' => 'privacy-policy',
+            'meta_description' => 'How Agape Infosys collects, uses, stores and protects your personal data when you use this site, contact us or buy from our shop.',
+        ]);
+
+        $this->seedPage($this->termsSchema(), [
+            'title' => 'Terms & Conditions | Agape Infosys',
+            'slug' => 'terms-and-conditions',
+            'meta_description' => 'The terms governing your use of the Agape Infosys website, services and digital shop.',
+        ]);
+
+        $this->seedPage($this->refundsSchema(), [
+            'title' => 'Cancellation, Refund & Subscription Cancellation Policy | Agape Infosys',
+            'slug' => 'cancellation-and-refunds',
+            'meta_description' => 'How to cancel a subscription, when refunds apply and how long they take — for Agape Infosys digital products and services.',
+        ]);
+
+        $this->seedPage($this->deliverySchema(), [
+            'title' => 'Delivery Policy | Agape Infosys',
+            'slug' => 'delivery-policy',
+            'meta_description' => 'How digital access is delivered after purchase: activation timelines, receipts, downloads and what happens if access is delayed.',
+        ]);
+
         $this->seedPage($this->serviceDetailSchema(), [
             'title' => 'Service | Agape Infosys Services',
             'slug' => 'service-detail',
@@ -948,5 +972,230 @@ class PageSeeder extends Seeder
                 ],
             ],
         ];
+    }
+
+    /**
+     * A legal policy page: a hero followed by one text block per section.
+     *
+     * @param  array<int, array{heading: string, paragraphs: array<int, string>}>  $sections
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function legalSchema(string $accent, string $titleAfter, string $lead, array $sections): array
+    {
+        $blocks = [
+            [
+                'widget' => 'page-hero',
+                'settings' => [
+                    'source' => 'static',
+                    'eyebrow' => 'Legal',
+                    'title_before' => '',
+                    'accent' => $accent,
+                    'title_after' => $titleAfter,
+                    'lead' => $lead,
+                    'show_breadcrumb' => false,
+                    'show_meta' => false,
+                    'show_author' => false,
+                    'gradient' => 'right',
+                    'spacing' => 'default',
+                ],
+            ],
+        ];
+
+        foreach ($sections as $index => $section) {
+            $blocks[] = [
+                'widget' => 'rich-text',
+                'settings' => [
+                    'subtitle' => 'Legal',
+                    'title' => $section['heading'],
+                    'mark' => '',
+                    'paragraphs' => array_map(fn (string $text): array => ['text' => $text], $section['paragraphs']),
+                    'align' => 'left',
+                    'background' => $index % 2 === 0 ? 'surface' : 'ink',
+                    'spacing' => 'default',
+                ],
+            ];
+        }
+
+        return ['blocks' => $blocks];
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function privacyPolicySchema(): array
+    {
+        return $this->legalSchema(
+            'Privacy',
+            'Policy',
+            'What we collect when you browse this site, contact us or buy from our shop — and the control you keep over it.',
+            [
+                [
+                    'heading' => 'Who we are & what we collect',
+                    'paragraphs' => [
+                        'Agape Infosys is a software solutions and IT consultancy practice. We collect only what the job needs: the details you give us in contact, requirement and enquiry forms; the order details recorded when you buy a digital product or subscription; the profile details of registered clients; and standard server logs used for security and reliability.',
+                        'We do not sell your personal data, and we do not send marketing messages unless you asked for them.',
+                    ],
+                ],
+                [
+                    'heading' => 'Payments & sharing',
+                    'paragraphs' => [
+                        'Card numbers and wallet credentials never touch our servers — payments are processed by our gateway partners on their own secure surfaces. We receive only the confirmation, amount, currency and a transaction reference.',
+                        'We share data only with the parties that help us run the business: payment gateways, hosting and infrastructure providers, email providers and professional advisers, each bound to protect it. Connected product sites receive only your subscriber key and entitlement status.',
+                    ],
+                ],
+                [
+                    'heading' => 'Retention & security',
+                    'paragraphs' => [
+                        'Enquiries are kept for up to 24 months. Order and subscription records are kept as long as accounting law requires, typically eight years. Client account data is deleted on request unless a legal obligation requires us to keep transaction records.',
+                        'We use encryption in transit, hashed passwords, restricted administrative access and signed product API requests, and we notify the relevant authority of any breach as the law requires.',
+                    ],
+                ],
+                [
+                    'heading' => 'Your rights',
+                    'paragraphs' => [
+                        'You can ask for a copy of your data, correction, deletion, restriction or portability, depending on where you live. Registered clients can edit the basics any time from the profile page in their dashboard. Write to us through the contact page — we respond within 30 days.',
+                    ],
+                ],
+                [
+                    'heading' => 'Cookies & changes',
+                    'paragraphs' => [
+                        'We use only the cookies needed to keep you signed in and run your shopping cart, plus standard server logging. No advertising or cross-site tracking cookies.',
+                        'When we change how we handle data we update this page and revise the date shown on it.',
+                    ],
+                ],
+            ],
+        );
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function termsSchema(): array
+    {
+        return $this->legalSchema(
+            'Terms',
+            '& Conditions',
+            'The agreement behind using this website and buying from us. Plain language, no tricks.',
+            [
+                [
+                    'heading' => 'Agreement & services',
+                    'paragraphs' => [
+                        'By using this website, contacting us, registering an account or buying from us, you agree to these terms and to the Privacy, Refund and Delivery policies they link to. For bespoke work, the signed statement of work also applies and wins where it conflicts.',
+                        'Agape Infosys provides software development, IT consultancy, cloud and related digital services, and sells digital products and subscriptions through this site. Descriptions and prices are an invitation to buy; an engagement begins when we confirm it in writing.',
+                    ],
+                ],
+                [
+                    'heading' => 'Accounts, orders & payment',
+                    'paragraphs' => [
+                        'You must be at least 18, or acting for an organisation that can contract. Keep your credentials confidential and give us accurate details — orders are matched to the email you check out with.',
+                        'Prices are shown in the currency displayed at checkout. Payment is due in full at checkout unless a written engagement says otherwise, and a contract of sale forms when we confirm your payment. We may correct obvious pricing errors and cancel affected orders with a full refund.',
+                    ],
+                ],
+                [
+                    'heading' => 'Subscriptions & renewals',
+                    'paragraphs' => [
+                        'Subscription plans renew automatically at the interval shown at checkout until cancelled. Cancel any time from your dashboard — that stops future renewals and access continues until the end of the period already paid for. Full details are in the Cancellation & Refund Policy.',
+                    ],
+                ],
+                [
+                    'heading' => 'Intellectual property & acceptable use',
+                    'paragraphs' => [
+                        'The website and its content belong to Agape Infosys or its licensors. For bespoke work, ownership of deliverables transfers to you on full payment, while we retain our pre-existing tools, libraries and know-how.',
+                        'You may not use the site unlawfully, probe or overload our systems, resell access without permission, upload malicious code, or impersonate another person. We may suspend accounts that break these rules.',
+                    ],
+                ],
+                [
+                    'heading' => 'Liability & governing law',
+                    'paragraphs' => [
+                        'The site is provided "as is". To the maximum extent permitted by law we are not liable for indirect or consequential losses, and our total liability for any purchase is limited to what you paid for it. Nothing limits liability that cannot be limited by law.',
+                        'These terms are governed by the laws of India with the courts of Bengaluru, Karnataka, and consumers keep any mandatory protections of their own residence. We may update these terms; the version published on this page always applies.',
+                    ],
+                ],
+            ],
+        );
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function refundsSchema(): array
+    {
+        return $this->legalSchema(
+            'Cancellation',
+            '& Refunds',
+            'How to cancel a subscription, when a refund applies, and how quickly the money comes back.',
+            [
+                [
+                    'heading' => 'Cancelling a subscription',
+                    'paragraphs' => [
+                        'Subscriptions can be cancelled at any time from the client dashboard, with one click and no questions asked: sign in, open My Subscriptions and press Cancel.',
+                        'Cancellation stops all future renewals immediately — no further charges are taken — and your access continues until the end of the period you have already paid for. It does not refund the current period by default.',
+                    ],
+                ],
+                [
+                    'heading' => 'When refunds apply',
+                    'paragraphs' => [
+                        'Digital goods are delivered instantly, so refunds are offered on clear terms: within 14 days of payment when access has not been exercised; in full when we fail to deliver access and cannot fix it within the Delivery Policy window; for duplicate payments; and for billing errors caused by us.',
+                        'Not refundable: access already exercised, subscription time consumed after the 14-day window, change of mind after 30 days, bank fees, and delivered milestones of bespoke development work.',
+                    ],
+                ],
+                [
+                    'heading' => 'How to request & how long it takes',
+                    'paragraphs' => [
+                        'Request a refund through the contact page quoting your order reference (it looks like AGP-XXXXXX and appears in your order history), or reply to your confirmation email with "Refund request" in the subject line.',
+                        'We acknowledge requests within one business day and decide within three. Approved refunds are issued to the original payment method: up to 3 business days by us, then typically 7–10 business days for cards and UPI and up to 15 for some wallets and international methods.',
+                    ],
+                ],
+                [
+                    'heading' => 'Failed payments, chargebacks & changes',
+                    'paragraphs' => [
+                        'Unpaid orders simply expire — checkout sessions lapse automatically and nothing is charged. Failed or expired payments never capture money; any hold your bank placed is released by them, usually within 48 hours.',
+                        'Please contact us before raising a chargeback — most issues are solved faster directly. Terms for bespoke engagements are set out in the signed statement of work for that engagement.',
+                    ],
+                ],
+            ],
+        );
+    }
+
+    /**
+     * @return array{blocks: array<int, array{widget: string, settings: array<string, mixed>}>}
+     */
+    private function deliverySchema(): array
+    {
+        return $this->legalSchema(
+            'Delivery',
+            'Policy',
+            'Everything we sell here is digital. This page explains exactly how access reaches you, and how fast.',
+            [
+                [
+                    'heading' => 'What we deliver & how',
+                    'paragraphs' => [
+                        'Agape Infosys sells digital products, subscriptions and software services. Nothing is shipped physically: there are no parcels, couriers or shipping charges. What you receive is digital access — activation of a plan on the connected product.',
+                        'After checkout and payment, our system receives the gateway confirmation and activates your plan. You get an order confirmation and receipt by email, and the access appears in your dashboard under My Access with a direct link to the product.',
+                    ],
+                ],
+                [
+                    'heading' => 'Delivery timelines',
+                    'paragraphs' => [
+                        'Activation is typically within minutes of payment confirmation, and is guaranteed within 24 hours in every case. Receipts are emailed immediately and downloadable any time from your order history. Bespoke software is delivered on the milestones agreed in your statement of work.',
+                        'A payment is confirmed when our gateway reports it successful. Bank delays and wallet settlements sit between your payment and that confirmation and are outside our control — but the 24-hour guarantee starts the moment confirmation reaches us.',
+                    ],
+                ],
+                [
+                    'heading' => 'If access has not arrived',
+                    'paragraphs' => [
+                        'Check that the email you signed in with matches the order, and confirm the order status is Paid in your dashboard. If access is still missing after 24 hours, contact us with the order reference — we investigate within one business day and either restore access immediately or refund the payment in full.',
+                        'If you checked out with the wrong email address, contact us with the order reference and the correct email; once verified, we move the entitlement across.',
+                    ],
+                ],
+                [
+                    'heading' => 'Currency, taxes & availability',
+                    'paragraphs' => [
+                        'Prices are charged in the currency shown at checkout, and taxes are itemised on your receipt along with the order reference, amount, date and payment status.',
+                        'We guarantee your entitlement is granted on our side within the timelines above; the availability of the destination platform is governed by that platform\'s own terms.',
+                    ],
+                ],
+            ],
+        );
     }
 }

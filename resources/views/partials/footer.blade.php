@@ -21,6 +21,11 @@
                 <li><a href="{{ route('portfolio.index') }}" class="hover:text-accent">Case Studies</a></li>
                 <li><a href="{{ route('blog.index') }}" class="hover:text-accent">Blog</a></li>
                 <li><a href="{{ route('requirements.create') }}" class="hover:text-accent">Requirement Brief</a></li>
+                <li>
+                    <a href="{{ route(auth()->check() ? 'dashboard.index' : 'login') }}" class="hover:text-accent">
+                        {{ auth()->check() ? 'Client Dashboard' : 'Client Login' }}
+                    </a>
+                </li>
             </ul>
         </div>
 
@@ -70,20 +75,29 @@
     </div>
 
     <div class="border-t border-line">
-        <div class="shell flex flex-col items-center justify-between gap-4 py-7 sm:flex-row">
-            <a href="{{ route('home') }}" class="flex items-center gap-3">
-                <span class="font-display text-base tracking-[0.22em] text-white uppercase">
-                    Agape<span class="text-accent">Infosys</span>
-                </span>
-            </a>
+        <div class="shell flex flex-wrap items-center justify-center gap-x-8 gap-y-3 py-5 text-sm text-muted">
+            <a href="{{ route('legal.privacy') }}" class="hover:text-accent">Privacy Policy</a>
+            <a href="{{ route('legal.terms') }}" class="hover:text-accent">Terms &amp; Conditions</a>
+            <a href="{{ route('legal.refunds') }}" class="hover:text-accent">Cancellation &amp; Refunds</a>
+            <a href="{{ route('legal.delivery') }}" class="hover:text-accent">Delivery Policy</a>
+        </div>
 
-            <p class="text-sm text-muted">
-                &copy; <span data-year>{{ date('Y') }}</span> {{ $brand }}. All Rights Reserved.
-            </p>
+        <div class="border-t border-line">
+            <div class="shell flex flex-col items-center justify-between gap-4 py-7 sm:flex-row">
+                <a href="{{ route('home') }}" class="flex items-center gap-3">
+                    <span class="font-display text-base tracking-[0.22em] text-white uppercase">
+                        Agape<span class="text-accent">Infosys</span>
+                    </span>
+                </a>
 
-            <a href="#main" class="font-display text-xs tracking-[0.24em] text-muted uppercase hover:text-accent">
-                Back to top
-            </a>
+                <p class="text-sm text-muted">
+                    &copy; <span data-year>{{ date('Y') }}</span> {{ $brand }}. All Rights Reserved.
+                </p>
+
+                <a href="#main" class="font-display text-xs tracking-[0.24em] text-muted uppercase hover:text-accent">
+                    Back to top
+                </a>
+            </div>
         </div>
     </div>
 </footer>

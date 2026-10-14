@@ -1,18 +1,19 @@
 /**
- * Site behaviour: sticky header state, mobile navigation, animated counters
- * and the back-to-top control.
+ * Site behaviour: the floating bottom navigation, the search overlay,
+ * animated counters and the back-to-top control.
  */
 
 const onScroll = () => {
-    const header = document.querySelector('[data-site-header]');
-
-    if (header) {
-        header.classList.toggle('is-stuck', window.scrollY > 24);
-    }
-
     const toTop = document.querySelector('[data-to-top]');
     if (toTop) {
         toTop.classList.toggle('is-visible', window.scrollY > 600);
+    }
+
+    const progress = document.querySelector('[data-scroll-progress]');
+    if (progress) {
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        const ratio = scrollable > 0 ? Math.min(window.scrollY / scrollable, 1) : 0;
+        progress.style.transform = `scaleX(${ratio})`;
     }
 };
 
@@ -37,7 +38,44 @@ const initNav = () => {
     });
 
     window.addEventListener('resize', () => {
-        if (window.innerWidth >= 1024) {
+        if (window.innerWidth >= 1280) {
+            setOpen(false);
+        }
+    });
+};
+
+const initSearch = () => {
+    const openers = document.querySelectorAll('[data-search-open]');
+    const panel = document.querySelector('[data-search-panel]');
+
+    if (openers.length === 0 || !panel) {
+        return;
+    }
+
+    const input = panel.querySelector('input');
+    const closers = panel.querySelectorAll('[data-search-close]');
+
+    const setOpen = (open) => {
+        panel.classList.toggle('is-open', open);
+        panel.setAttribute('aria-hidden', String(!open));
+        openers.forEach((opener) => opener.setAttribute('aria-expanded', String(open)));
+        document.body.classList.toggle('overflow-hidden', open);
+
+        if (open && input) {
+            input.focus();
+        }
+    };
+
+    openers.forEach((opener) => {
+        opener.addEventListener('click', () => setOpen(true));
+    });
+
+    closers.forEach((closer) => {
+        closer.addEventListener('click', () => setOpen(false));
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && panel.classList.contains('is-open')) {
             setOpen(false);
         }
     });
@@ -91,6 +129,7 @@ const initYear = () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     initNav();
+    initSearch();
     initCounters();
     initYear();
     onScroll();
