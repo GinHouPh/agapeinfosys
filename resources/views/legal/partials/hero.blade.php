@@ -7,7 +7,7 @@
     ];
 @endphp
 
-<section class="relative overflow-hidden pt-40 pb-14">
+<section class="relative overflow-hidden pt-24 pb-14 lg:pb-28">
     <div
         class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(217,4,41,0.20),transparent_55%)]"
         aria-hidden="true"
@@ -35,4 +35,6 @@
             @endforeach
         </nav>
     </div>
+
+    <x-scroll-cue />
 </section>

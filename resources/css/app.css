@@ -439,9 +439,10 @@ html.light {
 
     /* Three equal columns keep the logo optically centred no matter how
        wide the contact cluster (left) or the quote cluster (right) gets;
-       each side only grows to its own content. */
+       each side only grows to its own content. The bar itself spans the
+       full viewport width, so it needs its own edge padding. */
     .top-bar__inner {
-        @apply grid h-10 grid-cols-[1fr_auto_1fr] items-center gap-4 text-xs;
+        @apply grid h-10 grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 text-xs sm:px-5;
     }
 
     .top-bar__progress {

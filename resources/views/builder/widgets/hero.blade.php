@@ -5,7 +5,7 @@
     $cardStats = $settings['card_stats'] ?? [];
     $buttons = $settings['buttons'] ?? [];
     $spacing = $settings['spacing'] ?? 'default';
-    $ptClass = $spacing === 'none' ? 'pt-8' : ($spacing === 'tight' ? 'pt-32' : 'pt-28');
+    $ptClass = $spacing === 'none' ? 'pt-8' : ($spacing === 'tight' ? 'pt-20' : 'pt-24');
     $pbClass = $spacing === 'none' ? 'pb-8' : 'pb-20';
 
     $glow = match ($gradient) {
@@ -15,7 +15,7 @@
     };
 @endphp
 
-<section class="relative flex min-h-screen items-center overflow-hidden {{ $ptClass }} {{ $pbClass }}">
+<section class="relative flex min-h-[calc(100svh_-_7.5rem)] items-center overflow-hidden {{ $ptClass }} {{ $pbClass }}">
     <div class="pointer-events-none absolute inset-0 bg-[radial-gradient({{ $glow }},rgba(217,4,41,0.20),transparent_58%)]"
          aria-hidden="true"></div>
     <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(56,56,56,0.35)_1px,transparent_1px),linear-gradient(to_bottom,rgba(56,56,56,0.35)_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_78%)]"
@@ -88,9 +88,6 @@
     </div>
 
     @if ($settings['show_scroll'] ?? true)
-        <div class="absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-3 lg:flex">
-            <span class="font-display text-[11px] tracking-[0.3em] text-muted uppercase">Scroll</span>
-            <span class="h-14 w-px bg-linear-to-b from-accent to-transparent" aria-hidden="true"></span>
-        </div>
+        <x-scroll-cue />
     @endif
 </section>

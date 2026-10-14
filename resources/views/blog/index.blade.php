@@ -5,7 +5,7 @@
 @section('description', 'Articles from the Agape Infosys team on software engineering, cloud operations, product delivery and digital transformation.')
 
 @section('content')
-    <section class="relative overflow-hidden pt-40 pb-16">
+    <section class="relative overflow-hidden pt-24 pb-16 lg:pb-28">
         <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_15%,rgba(217,4,41,0.18),transparent_55%)]"
              aria-hidden="true"></div>
 
@@ -21,6 +21,8 @@
                 cloud economics and everything in between.
             </p>
         </div>
+
+        <x-scroll-cue />
     </section>
 
     <section class="section section--surface">

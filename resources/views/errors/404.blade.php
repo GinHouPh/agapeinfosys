@@ -3,7 +3,7 @@
 @section('title', 'Page Not Found | Agape Infosys')
 
 @section('content')
-    <section class="flex min-h-screen items-center pt-20">
+    <section class="relative flex min-h-[calc(100svh_-_7.5rem)] items-center pt-20">
         <div class="shell text-center">
             <span class="eyebrow">Error 404</span>
 
@@ -22,5 +22,7 @@
                 <x-btn :href="route('services.index')" variant="ghost" label="Our Services" />
             </div>
         </div>
+
+        <x-scroll-cue />
     </section>
 @endsection

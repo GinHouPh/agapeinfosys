@@ -5,7 +5,7 @@
 @section('description', 'Talk to the Agape Infosys team about custom software development, IT consultancy, cloud and digital transformation engagements.')
 
 @section('content')
-    <section class="relative overflow-hidden pt-40 pb-16">
+    <section class="relative overflow-hidden pt-24 pb-16 lg:pb-28">
         <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(217,4,41,0.20),transparent_55%)]"
              aria-hidden="true"></div>
 
@@ -22,6 +22,8 @@
                 We reply to every enquiry within one business day.
             </p>
         </div>
+
+        <x-scroll-cue />
     </section>
 
     <section class="section section--surface">

@@ -5,7 +5,7 @@
 @section('description', 'Search the Agape Infosys site for services, case studies, articles and products.')
 
 @section('content')
-    <section class="relative overflow-hidden pt-40 pb-16">
+    <section class="relative overflow-hidden pt-24 pb-16 lg:pb-28">
         <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_15%,rgba(217,4,41,0.18),transparent_55%)]"
              aria-hidden="true"></div>
 
@@ -37,6 +37,8 @@
                 </div>
             </form>
         </div>
+
+        <x-scroll-cue />
     </section>
 
     <section class="section section--surface">

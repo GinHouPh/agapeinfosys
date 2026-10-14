@@ -8,7 +8,7 @@
     {{-- ============================================================
          Hero
          ============================================================ --}}
-    <section class="relative flex min-h-screen items-center overflow-hidden pt-28 pb-20">
+    <section class="relative flex min-h-[calc(100svh_-_7.5rem)] items-center overflow-hidden pt-20 pb-20">
         <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(217,4,41,0.20),transparent_58%)]"
              aria-hidden="true"></div>
         <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(56,56,56,0.35)_1px,transparent_1px),linear-gradient(to_bottom,rgba(56,56,56,0.35)_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_78%)]"
@@ -63,10 +63,7 @@
             </div>
         </div>
 
-        <div class="absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-3 lg:flex">
-            <span class="font-display text-[11px] tracking-[0.3em] text-muted uppercase">Scroll</span>
-            <span class="h-14 w-px bg-linear-to-b from-accent to-transparent" aria-hidden="true"></span>
-        </div>
+        <x-scroll-cue />
     </section>
 
     {{-- ============================================================

@@ -19,7 +19,7 @@
 @endphp
 
 <div class="top-bar">
-    <div class="shell top-bar__inner">
+    <div class="top-bar__inner">
         <div class="flex items-center gap-4">
             <div class="theme-toggle" role="group" aria-label="Colour theme">
                 @foreach ($themeChoices as $choice)

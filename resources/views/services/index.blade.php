@@ -5,7 +5,7 @@
 @section('description', 'Custom software development, web and mobile engineering, cloud and DevOps, digital transformation consulting and product design from Agape Infosys.')
 
 @section('content')
-    <section class="relative overflow-hidden pt-40 pb-20">
+    <section class="relative overflow-hidden pt-24 pb-20 lg:pb-28">
         <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_75%_15%,rgba(217,4,41,0.18),transparent_55%)]"
              aria-hidden="true"></div>
 
@@ -21,6 +21,8 @@
                 delivered by senior practitioners with a documented, measurable process.
             </p>
         </div>
+
+        <x-scroll-cue />
     </section>
 
     <section class="section section--surface">

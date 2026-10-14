@@ -6,7 +6,7 @@
 
 @section('content')
     {{-- Hero --}}
-    <section class="relative overflow-hidden pt-40 pb-20">
+    <section class="relative overflow-hidden pt-24 pb-20 lg:pb-28">
         <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(217,4,41,0.18),transparent_55%)]"
              aria-hidden="true"></div>
 
@@ -18,6 +18,8 @@
                 built around the people who actually do the work.
             </h1>
         </div>
+
+        <x-scroll-cue />
     </section>
 
     {{-- Story --}}
