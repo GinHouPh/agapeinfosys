@@ -29,7 +29,13 @@
         --section-y: var(--spacing-section);
     }
 
-    @media (max-width: 1199.98px) {
+    /* Vertical rhythm switches on the same two breakpoints the markup
+       already speaks: `md` (768px) and `lg` (1024px), written here as
+       their complements. Tablet used to run to 1200px — a width no
+       Tailwind variant can express — so a two-column `lg:` layout sat
+       under tablet padding for 176px of viewport. The .02px matches the
+       convention already used for the mobile query below. */
+    @media (max-width: 1023.98px) {
         :root {
             --section-y: var(--spacing-section-tablet);
         }
