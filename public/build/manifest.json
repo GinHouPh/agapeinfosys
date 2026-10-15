@@ -1,0 +1,85 @@
+{
+  "_akshar-300-normal-B0BV3_q0.woff": {
+    "file": "assets/akshar-300-normal-B0BV3_q0.woff",
+    "src": "_akshar-300-normal-B0BV3_q0.woff"
+  },
+  "_akshar-300-normal-DHepS9gR.woff2": {
+    "file": "assets/akshar-300-normal-DHepS9gR.woff2",
+    "src": "_akshar-300-normal-DHepS9gR.woff2"
+  },
+  "_akshar-400-normal-DUtYOj_A.woff2": {
+    "file": "assets/akshar-400-normal-DUtYOj_A.woff2",
+    "src": "_akshar-400-normal-DUtYOj_A.woff2"
+  },
+  "_akshar-400-normal-IdOPz5-M.woff": {
+    "file": "assets/akshar-400-normal-IdOPz5-M.woff",
+    "src": "_akshar-400-normal-IdOPz5-M.woff"
+  },
+  "_akshar-500-normal-A3faBJJy.woff": {
+    "file": "assets/akshar-500-normal-A3faBJJy.woff",
+    "src": "_akshar-500-normal-A3faBJJy.woff"
+  },
+  "_akshar-500-normal-D8mhZZzu.woff2": {
+    "file": "assets/akshar-500-normal-D8mhZZzu.woff2",
+    "src": "_akshar-500-normal-D8mhZZzu.woff2"
+  },
+  "_akshar-600-normal-A4HQze_G.woff2": {
+    "file": "assets/akshar-600-normal-A4HQze_G.woff2",
+    "src": "_akshar-600-normal-A4HQze_G.woff2"
+  },
+  "_akshar-600-normal-BW1ntTW0.woff": {
+    "file": "assets/akshar-600-normal-BW1ntTW0.woff",
+    "src": "_akshar-600-normal-BW1ntTW0.woff"
+  },
+  "_fonts-moRXlkWS.css": {
+    "file": "assets/fonts-moRXlkWS.css",
+    "src": "_fonts-moRXlkWS.css"
+  },
+  "_roboto-300-normal-CCzlftfr.woff2": {
+    "file": "assets/roboto-300-normal-CCzlftfr.woff2",
+    "src": "_roboto-300-normal-CCzlftfr.woff2"
+  },
+  "_roboto-300-normal-Dqn3NW0Y.woff": {
+    "file": "assets/roboto-300-normal-Dqn3NW0Y.woff",
+    "src": "_roboto-300-normal-Dqn3NW0Y.woff"
+  },
+  "_roboto-400-normal-BqEyEoaF.woff2": {
+    "file": "assets/roboto-400-normal-BqEyEoaF.woff2",
+    "src": "_roboto-400-normal-BqEyEoaF.woff2"
+  },
+  "_roboto-400-normal-D27F5sTu.woff": {
+    "file": "assets/roboto-400-normal-D27F5sTu.woff",
+    "src": "_roboto-400-normal-D27F5sTu.woff"
+  },
+  "_roboto-500-normal-7RbcRiD8.woff2": {
+    "file": "assets/roboto-500-normal-7RbcRiD8.woff2",
+    "src": "_roboto-500-normal-7RbcRiD8.woff2"
+  },
+  "_roboto-500-normal-fsTFPL3E.woff": {
+    "file": "assets/roboto-500-normal-fsTFPL3E.woff",
+    "src": "_roboto-500-normal-fsTFPL3E.woff"
+  },
+  "_roboto-700-normal-BZpUvMxY.woff2": {
+    "file": "assets/roboto-700-normal-BZpUvMxY.woff2",
+    "src": "_roboto-700-normal-BZpUvMxY.woff2"
+  },
+  "_roboto-700-normal-YuyVweIx.woff": {
+    "file": "assets/roboto-700-normal-YuyVweIx.woff",
+    "src": "_roboto-700-normal-YuyVweIx.woff"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-BIB29wQs.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-BPqe_z5f.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}
