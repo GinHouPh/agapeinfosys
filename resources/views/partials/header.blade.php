@@ -11,7 +11,7 @@
     ];
 
     $account = auth()->check()
-        ? ['label' => 'Dashboard', 'route' => 'dashboard.index']
+        ? ['label' => 'Dashboard', 'route' => auth()->user()->isAdmin() ? 'admin.dashboard' : 'dashboard.index']
         : ['label' => 'Login', 'route' => 'login'];
 
     $cartCount = app(\App\Services\Shop\Cart::class)->count();

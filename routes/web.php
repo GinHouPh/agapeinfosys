@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Admin\PlanController as AdminPlanController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\ShopOrderController as AdminShopOrderController;
@@ -198,6 +199,14 @@ Route::prefix('admin')->group(function (): void {
 
         Route::get('business', [BusinessSettingsController::class, 'edit'])->name('admin.business.edit');
         Route::put('business', [BusinessSettingsController::class, 'update'])->name('admin.business.update');
+
+        /*
+        | The administrator's own account — details, password, and deletion
+        */
+        Route::get('profile', [AdminProfileController::class, 'edit'])->name('admin.profile.edit');
+        Route::put('profile', [AdminProfileController::class, 'update'])->name('admin.profile.update');
+        Route::put('profile/password', [AdminProfileController::class, 'updatePassword'])->name('admin.password.update');
+        Route::delete('profile', [AdminProfileController::class, 'destroy'])->name('admin.profile.destroy');
 
         /*
         | Visual page builder

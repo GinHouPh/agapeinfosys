@@ -3,7 +3,7 @@
     $phone = \App\Models\Setting::value('contact_phone', '+91 00000 00000');
 
     $account = auth()->check()
-        ? ['label' => 'Dashboard', 'route' => 'dashboard.index']
+        ? ['label' => 'Dashboard', 'route' => auth()->user()->isAdmin() ? 'admin.dashboard' : 'dashboard.index']
         : ['label' => 'Client Login', 'route' => 'login'];
 
     /**

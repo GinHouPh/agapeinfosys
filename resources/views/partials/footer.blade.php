@@ -22,8 +22,14 @@
                 <li><a href="{{ route('blog.index') }}" class="hover:text-accent">Blog</a></li>
                 <li><a href="{{ route('requirements.create') }}" class="hover:text-accent">Requirement Brief</a></li>
                 <li>
-                    <a href="{{ route(auth()->check() ? 'dashboard.index' : 'login') }}" class="hover:text-accent">
-                        {{ auth()->check() ? 'Client Dashboard' : 'Client Login' }}
+                    <a href="{{ route(auth()->check() ? (auth()->user()->isAdmin() ? 'admin.dashboard' : 'dashboard.index') : 'login') }}" class="hover:text-accent">
+                        @if (! auth()->check())
+                            Client Login
+                        @elseif (auth()->user()->isAdmin())
+                            Admin Panel
+                        @else
+                            Client Dashboard
+                        @endif
                     </a>
                 </li>
             </ul>

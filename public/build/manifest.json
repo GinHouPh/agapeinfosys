@@ -68,7 +68,7 @@
     "src": "_roboto-700-normal-YuyVweIx.woff"
   },
   "resources/css/app.css": {
-    "file": "assets/app-BIB29wQs.css",
+    "file": "assets/app-CBpS41mR.css",
     "name": "app",
     "names": [
       "app.css"
@@ -77,7 +77,7 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-BPqe_z5f.js",
+    "file": "assets/app-CGs1dwsS.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

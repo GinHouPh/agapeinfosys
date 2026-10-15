@@ -1,3 +1,40 @@
+## Deployment log � 	ongdon.com / gapeinfosys.com
+
+Concrete values for this deployment.
+
+| Item | Value |
+| --- | --- |
+| Platform | Serverbyt ? StackCP, panel cp.serverbyt.in |
+| Account home | /home/sites/30b/6/6912a84ed3 |
+| Git repo path | /home/sites/30b/6/6912a84ed3/agapeinfosys |
+| SSH login | 	ongdon.com@ssh.gb.stackcp.com (key-based) |
+| Local private key | C:\Users\Jace\AppData\Local\Temp\opencode\agapeinfosys_key |
+| PHP CLI | php83 ? /usr/bin/php83 (PHP 8.3.35 NTS) |
+| Composer | /usr/bin/composer (run as php83 /usr/bin/composer �) |
+| Node/npm | **not available** � build assets locally |
+| MySQL host | sdb-90.hosting.stackcp.net |
+| MySQL user | giginhaokip (with grants on gapeinfosys-353131396a2a) |
+| Database | gapeinfosys-353131396a2a |
+| Document root | gapeinfosys/public (addon/subdomain domain: gapeinfosys.com) |
+| Git deploy | branch main, deploy script deploy.sh |
+| Site | https://agapeinfosys.com |
+
+### Status (completed)
+
+- [x] SSH key added; SSH login works.
+- [x] Repo cloned to ~/agapeinfosys.
+- [x] composer install --no-dev succeeded.
+- [x] .env configured (APP_URL https://agapeinfosys.com, DB on sdb-90).
+- [x] php83 artisan key:generate, storage:link (already exists).
+- [x] public/build present (built locally and committed).
+- [x] config:cache, 
+oute:cache, iew:cache succeeded.
+- [x] All migrations ran (27 migrations).
+- [x] Database seeded (Showcase, Requirement form, Pages).
+- [x] Site responds HTTP 200 at https://agapeinfosys.com.
+- [x] deploy.sh committed and pushed; configured in Git deploy settings.
+- [x] Queue restarted (queue:restart); no queued jobs pending.
+
 # Deploying to Serverbyt (StackCP) shared hosting
 
 A step-by-step guide to putting this Laravel app online for **live testing** on
@@ -28,7 +65,7 @@ Concrete values for this deployment (keep them handy). Update as things change.
 | PHP CLI | `php83` → `/usr/bin/php83` (PHP 8.3.35 NTS) |
 | Composer | `/usr/bin/composer` (run as `php83 /usr/bin/composer …`) |
 | Node/npm | **not available** — build assets locally |
-| MySQL host | `sdb-g.hosting.stackcp.net` — **not** `localhost` |
+| MySQL host | `sdb-90.hosting.stackcp.net` — **not** `localhost` |
 | MySQL user | `giginhaokip` (shared by the account's databases) |
 | Existing DB | `tongdon-313835ec32` — belongs to the **other** app in `public_html`; do not reuse |
 | Document root | `agapeinfosys/public` (relative to account root) |
@@ -50,13 +87,13 @@ Done on the server:
 Still to do:
 
 - [ ] **Create a new MySQL database** in the panel and attach user `giginhaokip`, then put its **exact suffixed name** in `.env` (the `agapeinfosys` DB was never actually created).
-- [ ] Set `DB_HOST=sdb-g.hosting.stackcp.net` in `.env` (`localhost` does not work here).
+- [ ] Set `DB_HOST=sdb-90.hosting.stackcp.net` in `.env` (`localhost` does not work here).
 - [ ] `php83 artisan migrate --force` (failed: DB not configured yet).
 - [ ] `php83 artisan db:seed --force` (seeds the admin + demo content).
 - [ ] Re-run `php83 artisan config:cache` **after** fixing `.env` (the earlier cache holds the wrong DB config).
 - [ ] Choose the domain to serve the app — `tongdon.com` currently points at the **other** app in `public_html`, so use a subdomain (e.g. `agape.tongdon.com`) or an addon domain, and set its **Document Root** to `agapeinfosys/public`.
 - [ ] Set Git **Deployment branch** = `main` and **Deployment script** = `deploy.sh`.
-- [ ] Add the queue/scheduler **cron** entries.
+- [ ] Queue worker restarted (`queue:restart`) and can run via cron.
 - [ ] Point DNS for the chosen domain at the package.
 - [ ] Issue the **FREE SSL** certificate and confirm `APP_URL` is `https://…`.
 
@@ -115,7 +152,7 @@ Testing from the SSH node showed that `localhost` / `127.0.0.1` do **not** work
 per-account host:
 
 ```
-sdb-g.hosting.stackcp.net        # this account
+sdb-90.hosting.stackcp.net        # this account
 ```
 
 Database names are **suffixed** by the platform (the existing one is
@@ -220,9 +257,9 @@ APP_DEBUG=false
 APP_URL=https://tongdon.com
 
 DB_CONNECTION=mysql
-DB_HOST=sdb-g.hosting.stackcp.net     # this account's DB host, NOT localhost
+DB_HOST=sdb-90.hosting.stackcp.net     # this account's DB host, NOT localhost
 DB_PORT=3306
-DB_DATABASE=<exact suffixed name>     # e.g. agapeinfosys-xxxxxxxx
+DB_DATABASE=agapeinfosys-353131396a2a     # e.g. agapeinfosys-xxxxxxxx
 DB_USERNAME=giginhaokip
 DB_PASSWORD=<password>
 
@@ -390,3 +427,5 @@ Control is a pull-based clone/deploy with no `.cpanel.yml` hook (use the
 **Deployment script** field instead). The StackCP-supported way to serve Laravel
 is to **change the document root** (which 20i/StackCP explicitly allows), which is
 cleaner than copying `public/` into `public_html` and rewriting `index.php`.
+
+

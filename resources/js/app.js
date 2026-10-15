@@ -201,12 +201,46 @@ const initYear = () => {
     });
 };
 
+const initAdminSidebar = () => {
+    const toggle = document.querySelector('[data-admin-sidebar-toggle]');
+
+    if (!toggle) {
+        return;
+    }
+
+    const STORAGE_KEY = 'admin-sidebar-collapsed';
+
+    const isCollapsed = () => document.documentElement.getAttribute('data-admin-sidebar') === 'collapsed';
+
+    const apply = (collapsed) => {
+        if (collapsed) {
+            document.documentElement.setAttribute('data-admin-sidebar', 'collapsed');
+        } else {
+            document.documentElement.removeAttribute('data-admin-sidebar');
+        }
+
+        toggle.setAttribute('aria-expanded', String(!collapsed));
+
+        try {
+            localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
+        } catch (error) {
+            // Storage can be unavailable (private mode); the state
+            // still applies for this page view.
+        }
+    };
+
+    apply(isCollapsed());
+
+    toggle.addEventListener('click', () => apply(!isCollapsed()));
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     initNav();
     initSearch();
     initTheme();
     initCounters();
     initYear();
+    initAdminSidebar();
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
 });

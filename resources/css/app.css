@@ -623,6 +623,39 @@ html.light {
     .admin-nav-link.is-active {
         @apply border-l-2 border-accent bg-ink text-white;
     }
+
+    .admin-icon-btn {
+        @apply h-9 w-9 place-items-center border border-line text-muted transition-colors duration-300 hover:border-accent hover:text-accent;
+    }
+}
+
+/* Collapsible admin sidebar — unlayered so it beats the Tailwind
+   utilities on the element (unlayered rules win over layered ones).
+   Collapsed, it becomes an icon rail: labels, headings and the
+   wordmark hide, links centre, and the width narrows. */
+html[data-admin-sidebar='collapsed'] .admin-sidebar {
+    width: 5rem;
+}
+
+html[data-admin-sidebar='collapsed'] .admin-sidebar .admin-nav-link__label,
+html[data-admin-sidebar='collapsed'] .admin-sidebar .admin-sidebar__text {
+    display: none;
+}
+
+html[data-admin-sidebar='collapsed'] .admin-sidebar .admin-sidebar__heading {
+    font-size: 0;
+}
+
+html[data-admin-sidebar='collapsed'] .admin-sidebar .admin-nav-link {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+html[data-admin-sidebar='collapsed'] .admin-sidebar .admin-sidebar__brand {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
 }
 
 /* Prose styling for long-form article and case study bodies */

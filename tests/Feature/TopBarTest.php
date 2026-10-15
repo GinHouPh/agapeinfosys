@@ -41,6 +41,36 @@ class TopBarTest extends TestCase
             ->assertDontSee('Client Login', false);
     }
 
+    public function test_the_top_bar_routes_administrators_to_the_admin_panel(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee('Dashboard', false)
+            ->assertSee(route('admin.dashboard'), false)
+            ->assertDontSee(route('dashboard.index'), false)
+            ->assertDontSee('Client Login', false);
+    }
+
+    public function test_the_header_and_footer_links_point_admins_to_the_admin_panel(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $html = $this->actingAs($admin)
+            ->get(route('home'))
+            ->assertOk()
+            ->getContent();
+
+        $header = Str::between($html, '<header data-site-header', '</header>');
+        $footer = Str::between($html, '<footer', '</footer>');
+
+        $this->assertStringContainsString(route('admin.dashboard'), $header);
+        $this->assertStringContainsString('Admin Panel', $footer);
+        $this->assertStringNotContainsString('Client Dashboard', $footer);
+    }
+
     public function test_the_top_bar_carries_the_scroll_progress_element(): void
     {
         $this->get(route('home'))
