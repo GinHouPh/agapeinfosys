@@ -271,11 +271,21 @@ const initMarketNav = () => {
             });
         };
 
+        const hasSub = (key) => subs.some((sub) => sub.dataset.marketSub === key);
+
         nodes.forEach((node) => {
             const key = node.dataset.marketKey;
 
-            node.addEventListener('mouseenter', () => showSub(key));
-            node.addEventListener('focusin', () => showSub(key));
+            // Keep the current submenu open when hovering a category without
+            // children, so the pointer can travel down to the sub-items.
+            const reveal = () => {
+                if (hasSub(key)) {
+                    showSub(key);
+                }
+            };
+
+            node.addEventListener('mouseenter', reveal);
+            node.addEventListener('focusin', reveal);
         });
 
         panel.addEventListener('mouseleave', () => showSub(null));

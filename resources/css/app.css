@@ -689,7 +689,7 @@ html.light {
     }
 
     .market-nav__node-link {
-        @apply flex items-center justify-between gap-2 py-1.5 font-body text-sm text-body transition-colors duration-200 hover:text-accent;
+        @apply flex items-center justify-between gap-2 py-1.5 font-body text-[13px] text-body transition-colors duration-200 hover:text-accent;
     }
 
     .market-nav__node:hover .market-nav__node-link,
@@ -708,11 +708,16 @@ html.light {
     }
 
     .market-nav__sub-list {
-        @apply flex flex-wrap gap-x-6 gap-y-2;
+        @apply flex items-center gap-x-5 gap-y-2 overflow-x-auto whitespace-nowrap;
+        scrollbar-width: none;
+    }
+
+    .market-nav__sub-list::-webkit-scrollbar {
+        display: none;
     }
 
     .market-nav__sub-link {
-        @apply font-body text-sm text-muted transition-colors duration-200 hover:text-accent;
+        @apply font-body text-xs text-muted transition-colors duration-200 hover:text-accent;
     }
 }
 
