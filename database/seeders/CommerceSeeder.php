@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use App\Models\PaymentGateway;
 use App\Models\Plan;
 use App\Models\Product;
@@ -21,12 +22,16 @@ class CommerceSeeder extends Seeder
             ['name' => 'Ekklesia', 'slug' => 'ekklesia', 'domain' => 'ekklesia.org'],
         ];
 
+        $category = Category::query()->where('name', 'PHP Scripts')->first()
+            ?? Category::query()->whereNull('parent_id')->first();
+
         foreach ($products as $index => $data) {
             $product = Product::updateOrCreate(
                 ['slug' => $data['slug']],
                 [
                     'name' => $data['name'],
                     'domain' => $data['domain'],
+                    'category_id' => $category?->getKey(),
                     'description' => $data['name'].' premium features, unlocked with a subscription.',
                     'callback_url' => 'https://'.$data['domain'].'/webhooks/agape',
                     'is_active' => true,

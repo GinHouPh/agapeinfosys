@@ -131,6 +131,7 @@ class CheckoutService
     private function grantEntitlement(Order $order): Subscription
     {
         $plan = $order->plan()->lockForUpdate()->firstOrFail();
+        $entitlementDays = $plan->entitlementDays();
 
         return Subscription::updateOrCreate(
             [
@@ -144,9 +145,11 @@ class CheckoutService
                 'email' => $order->email,
                 'status' => SubscriptionStatus::Active,
                 'starts_at' => $order->paid_at,
-                'ends_at' => $order->paid_at->copy()->addDays($plan->entitlementDays()),
-                'renews_at' => $plan->isRecurring()
-                    ? $order->paid_at->copy()->addDays($plan->entitlementDays())
+                'ends_at' => $entitlementDays === null
+                    ? null
+                    : $order->paid_at->copy()->addDays($entitlementDays),
+                'renews_at' => $plan->isRecurring() && $entitlementDays !== null
+                    ? $order->paid_at->copy()->addDays($entitlementDays)
                     : null,
                 'cancelled_at' => null,
             ]

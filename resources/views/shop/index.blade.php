@@ -1,15 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Shop')
-@section('description', 'Browse the software products from Agape Infosys and subscribe to the plan that fits.')
+@section('title', 'Marketplace')
+@section('description', 'Browse software products, scripts and digital goods across every market, built and sold by Agape Infosys.')
 
 @section('content')
-    <section class="border-b border-line py-16 sm:py-24">
-        <div class="mx-auto max-w-[1300px] px-5 sm:px-8">
+    <x-shop.market-nav :markets="$markets" />
+
+    <section class="section">
+        <div class="shell">
             <div class="flex flex-wrap items-end justify-between gap-6">
                 <x-section-head
-                    title="Our products"
-                    subtitle="Software built by Agape Infosys — pick a plan, check out once, and your account is activated instantly."
+                    title="Marketplace"
+                    subtitle="Software built by Agape Infosys — browse by market, pick a plan, and your account activates instantly."
                     mark="Shop"
                 />
 
@@ -17,6 +19,36 @@
                     Cart ({{ $cartCount }})
                 </a>
             </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach ($markets as $market)
+                    <a href="{{ route('shop.category', $market) }}" class="group admin-card flex flex-col !p-6 transition-colors duration-300 hover:border-accent">
+                        <span class="flex items-center justify-between gap-3">
+                            <span class="font-display text-lg tracking-wide text-white transition-colors duration-300 group-hover:text-accent">
+                                {{ $market->name }}
+                            </span>
+
+                            <svg class="text-muted transition-colors duration-300 group-hover:text-accent" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 10h12M11 5l5 5-5 5"/>
+                            </svg>
+                        </span>
+
+                        <span class="mt-3 text-sm text-muted">
+                            {{ $market->children->count() }} {{ \Illuminate\Support\Str::plural('category', $market->children->count()) }}
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    <section class="section section--surface border-t border-line">
+        <div class="shell">
+            <x-section-head
+                title="Featured products"
+                subtitle="The products ready to buy right now."
+                mark="Buy"
+            />
 
             <div class="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 @forelse ($products as $product)
@@ -37,7 +69,11 @@
                             <div class="min-w-0">
                                 <h2 class="font-display text-xl tracking-wide text-white">{{ $product->name }}</h2>
 
-                                @if ($product->domain)
+                                @if ($product->category)
+                                    <a href="{{ route('shop.category', $product->category) }}" class="mt-1 block text-xs text-muted transition-colors duration-300 hover:text-accent">
+                                        {{ $product->category->name }}
+                                    </a>
+                                @elseif ($product->domain)
                                     <span class="mt-1 block text-xs text-muted">{{ $product->domain }}</span>
                                 @endif
                             </div>

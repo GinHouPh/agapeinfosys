@@ -234,6 +234,66 @@ const initAdminSidebar = () => {
     toggle.addEventListener('click', () => apply(!isCollapsed()));
 };
 
+const initMarketNav = () => {
+    const nav = document.querySelector('[data-market-nav]');
+
+    if (!nav) {
+        return;
+    }
+
+    const toggles = Array.from(nav.querySelectorAll('[data-market-toggle]'));
+    const panels = Array.from(nav.querySelectorAll('[data-market-panel]'));
+
+    const setPanel = (key) => {
+        panels.forEach((panel) => {
+            panel.hidden = panel.dataset.marketPanel !== key;
+        });
+
+        toggles.forEach((toggle) => {
+            toggle.setAttribute('aria-expanded', String(toggle.dataset.marketToggle === key));
+        });
+    };
+
+    toggles.forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+            const key = toggle.dataset.marketToggle;
+            setPanel(toggle.getAttribute('aria-expanded') === 'true' ? null : key);
+        });
+    });
+
+    panels.forEach((panel) => {
+        const nodes = Array.from(panel.querySelectorAll('[data-market-node][data-market-key]'));
+        const subs = Array.from(panel.querySelectorAll('[data-market-sub]'));
+
+        const showSub = (key) => {
+            subs.forEach((sub) => {
+                sub.hidden = sub.dataset.marketSub !== key;
+            });
+        };
+
+        nodes.forEach((node) => {
+            const key = node.dataset.marketKey;
+
+            node.addEventListener('mouseenter', () => showSub(key));
+            node.addEventListener('focusin', () => showSub(key));
+        });
+
+        panel.addEventListener('mouseleave', () => showSub(null));
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!nav.contains(event.target)) {
+            setPanel(null);
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            setPanel(null);
+        }
+    });
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     initNav();
     initSearch();
@@ -241,6 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCounters();
     initYear();
     initAdminSidebar();
+    initMarketNav();
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
 });

@@ -7,6 +7,7 @@ use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -17,6 +18,7 @@ class Product extends Model
     use GeneratesSlug, HasFactory;
 
     protected $fillable = [
+        'category_id',
         'name',
         'slug',
         'domain',
@@ -58,6 +60,11 @@ class Product extends Model
         });
     }
 
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
     public function plans(): HasMany
     {
         return $this->hasMany(Plan::class)->orderBy('sort_order')->orderBy('id');
@@ -86,6 +93,11 @@ class Product extends Model
     public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function scopeInCategory(Builder $query, Category $category): Builder
+    {
+        return $query->whereIn('category_id', $category->descendantIds());
     }
 
     /**

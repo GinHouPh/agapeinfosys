@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             PostSeeder::class,
             TestimonialSeeder::class,
             ClientSeeder::class,
+            CategorySeeder::class,
             CommerceSeeder::class,
             ShowcaseProjectSeeder::class,
             RequirementFormSeeder::class,

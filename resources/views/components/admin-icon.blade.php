@@ -21,6 +21,7 @@
         'submissions' => '<path d="M3 11.5h4l1.5 2.5h3l1.5-2.5h4"/><path d="M5.5 4.5h9l2.5 7v4H3v-4l2.5-7Z"/>',
         'users' => '<circle cx="7.5" cy="7" r="2.5"/><path d="M3.5 16.5a4 4 0 0 1 8 0"/><path d="M13 5.2a2.5 2.5 0 0 1 0 4.6"/><path d="M14.5 12.8a4 4 0 0 1 2.5 3.7"/>',
         'products' => '<path d="m10 3 6.5 3.4v7.2L10 17l-6.5-3.4V6.4L10 3Z"/><path d="m3.8 6.6 6.2 3.3 6.2-3.3"/><path d="M10 9.9V17"/>',
+        'categories' => '<rect x="8" y="3.2" width="4" height="3" rx=".8"/><rect x="3" y="13.8" width="4" height="3" rx=".8"/><rect x="13" y="13.8" width="4" height="3" rx=".8"/><path d="M10 6.2v3.3M5 13.8v-2h10v2M10 9.5v2.3"/>',
         'plans' => '<path d="M3.5 9.5V4.5a1 1 0 0 1 1-1h5l7 7-6 6-7-7Z"/><path d="M7 7h.01"/>',
         'orders' => '<path d="M5 6.5h10l-.8 9.5H5.8L5 6.5Z"/><path d="M7.5 6.5V5a2.5 2.5 0 0 1 5 0v1.5"/>',
         'shop-orders' => '<circle cx="8" cy="16.5" r="1.3"/><circle cx="14" cy="16.5" r="1.3"/><path d="M3 4h1.8l1.6 9.5h8L16.5 7H6"/>',

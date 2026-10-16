@@ -27,6 +27,7 @@ class StoreProductRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:160'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'slug' => [
                 'nullable', 'string', 'max:180', 'alpha_dash',
                 Rule::unique('products', 'slug')->ignore($productId),
@@ -45,9 +46,12 @@ class StoreProductRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $sortOrder = $this->input('sort_order');
+
         $this->merge([
             'is_active' => $this->boolean('is_active'),
-            'sort_order' => $this->input('sort_order') === '' ? 0 : $this->input('sort_order'),
+            'category_id' => $this->input('category_id') === '' ? null : $this->input('category_id'),
+            'sort_order' => ($sortOrder === '' || $sortOrder === null) ? 0 : $sortOrder,
         ]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\PaymentGateway;
 use App\Models\Plan;
@@ -67,6 +68,39 @@ class AdminCommerceTest extends TestCase
         $this->assertDatabaseHas('products', ['slug' => 'new-product', 'is_active' => true]);
     }
 
+    public function test_product_can_be_assigned_to_a_category(): void
+    {
+        $category = Category::factory()->create();
+
+        $this->actingAs($this->admin())
+            ->post('/admin/products', [
+                'name' => 'Categorised',
+                'slug' => 'categorised',
+                'category_id' => $category->getKey(),
+                'is_active' => 1,
+            ])
+            ->assertRedirect(route('admin.products.index'));
+
+        $this->assertDatabaseHas('products', [
+            'slug' => 'categorised',
+            'category_id' => $category->getKey(),
+        ]);
+    }
+
+    public function test_product_category_must_exist(): void
+    {
+        $this->actingAs($this->admin())
+            ->from('/admin/products/create')
+            ->post('/admin/products', [
+                'name' => 'Bad Category',
+                'slug' => 'bad-category',
+                'category_id' => 99999,
+                'is_active' => 1,
+            ])
+            ->assertRedirect('/admin/products/create')
+            ->assertSessionHasErrors('category_id');
+    }
+
     public function test_duplicate_product_slug_is_rejected(): void
     {
         Product::factory()->create(['slug' => 'tongdon']);
@@ -100,16 +134,77 @@ class AdminCommerceTest extends TestCase
                 'name' => 'Pro',
                 'code' => 'pro',
                 'billing_type' => 'recurring',
-                'price' => 49900,
+                'price' => 499,
                 'currency' => 'INR',
-                'interval_days' => 30,
+                'interval_value' => 1,
+                'interval_unit' => 'months',
+                'validity_value' => '',
+                'validity_unit' => 'lifetime',
                 'validity_days' => '',
                 'sort_order' => 0,
                 'is_active' => 1,
             ])
             ->assertRedirect(route('admin.plans.index'));
 
-        $this->assertDatabaseHas('plans', ['code' => 'pro', 'product_id' => $product->getKey()]);
+        $this->assertDatabaseHas('plans', [
+            'code' => 'pro',
+            'product_id' => $product->getKey(),
+            'price' => 49900,
+            'interval_days' => 30,
+        ]);
+    }
+
+    public function test_plan_full_amount_price_is_stored_as_minor_units(): void
+    {
+        $product = Product::factory()->create();
+
+        $this->actingAs($this->admin())
+            ->post('/admin/plans', [
+                'product_id' => $product->getKey(),
+                'name' => 'Lifetime',
+                'code' => 'lifetime',
+                'billing_type' => 'one_time',
+                'price' => '1499.50',
+                'currency' => 'INR',
+                'validity_value' => 0,
+                'validity_unit' => 'lifetime',
+                'interval_value' => '',
+                'interval_unit' => 'months',
+                'is_active' => 1,
+            ])
+            ->assertRedirect(route('admin.plans.index'));
+
+        $this->assertDatabaseHas('plans', [
+            'code' => 'lifetime',
+            'price' => 149950,
+            'validity_days' => 0,
+        ]);
+
+        $plan = Plan::query()->where('code', 'lifetime')->firstOrFail();
+        $this->assertTrue($plan->isLifetime());
+        $this->assertNull($plan->entitlementDays());
+
+        $this->actingAs($this->admin())
+            ->get('/admin/plans')
+            ->assertOk()
+            ->assertSee('Lifetime', false);
+    }
+
+    public function test_plan_index_is_paginated(): void
+    {
+        Plan::factory()->count(20)->create();
+
+        $response = $this->actingAs($this->admin())->get('/admin/plans');
+
+        $response->assertOk();
+        $this->assertSame(15, $response->viewData('plans')->count());
+        $this->assertSame(2, $response->viewData('plans')->lastPage());
+        $response->assertSee(route('admin.plans.index').'?page=2', false);
+
+        $pageTwo = $this->actingAs($this->admin())->get('/admin/plans?page=2');
+
+        $pageTwo->assertOk();
+        $this->assertSame(5, $pageTwo->viewData('plans')->count());
     }
 
     public function test_plan_code_must_be_unique_per_product(): void

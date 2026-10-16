@@ -74,15 +74,28 @@ class Plan extends Model
     }
 
     /**
-     * Period a payment grants access for, in days.
+     * Period a payment grants access for, in days. Null means lifetime access.
      */
-    public function entitlementDays(): int
+    public function entitlementDays(): ?int
     {
         if ($this->billing_type === BillingType::Recurring) {
             return $this->interval_days ?? 30;
         }
 
+        if ($this->isLifetime()) {
+            return null;
+        }
+
         return $this->validity_days ?? 365;
+    }
+
+    /**
+     * Lifetime plans never expire (one-time purchase with validity_days of 0).
+     */
+    public function isLifetime(): bool
+    {
+        return $this->billing_type === BillingType::OneTime
+            && ($this->validity_days ?? 365) === 0;
     }
 
     /**

@@ -47,6 +47,8 @@
                             <td class="text-muted">
                                 @if ($plan->billing_type === \App\Enums\BillingType::Recurring)
                                     Every {{ \App\Enums\BillingType::intervalLabel($plan->interval_days ?? 30) }}
+                                @elseif ($plan->isLifetime())
+                                    Lifetime
                                 @else
                                     {{ $plan->validity_days ?? 365 }} days
                                 @endif

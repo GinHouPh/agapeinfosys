@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\Admin\BusinessSettingsController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FormController as AdminFormController;
 use App\Http\Controllers\Admin\FormFieldController as AdminFormFieldController;
@@ -150,6 +151,7 @@ Route::prefix('dashboard')->middleware('auth')->group(function (): void {
 |
 */
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
+Route::get('/shop/category/{category:slug}', [ShopController::class, 'category'])->name('shop.category');
 Route::get('/shop/cart', [ShopCartController::class, 'index'])->name('shop.cart.index');
 Route::post('/shop/cart', [ShopCartController::class, 'store'])->name('shop.cart.store');
 Route::delete('/shop/cart', [ShopCartController::class, 'destroy'])->name('shop.cart.destroy');
@@ -221,6 +223,7 @@ Route::prefix('admin')->group(function (): void {
         */
         Route::resource('products', AdminProductController::class, ['as' => 'admin'])->except('show');
         Route::post('products/{product}/rotate', [AdminProductController::class, 'rotate'])->name('admin.products.rotate');
+        Route::resource('categories', AdminCategoryController::class, ['as' => 'admin'])->except('show');
         Route::resource('plans', AdminPlanController::class, ['as' => 'admin'])->except('show');
         Route::get('gateways', [AdminGatewayController::class, 'index'])->name('admin.gateways.index');
         Route::get('gateways/{gateway}/edit', [AdminGatewayController::class, 'edit'])->name('admin.gateways.edit');

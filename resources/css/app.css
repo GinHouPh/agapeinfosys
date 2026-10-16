@@ -627,6 +627,93 @@ html.light {
     .admin-icon-btn {
         @apply h-9 w-9 place-items-center border border-line text-muted transition-colors duration-300 hover:border-accent hover:text-accent;
     }
+
+    /* ------------------------------------------------------------
+       Market mega menu — the CodeCanyon-style horizontal browser at
+       the top of the shop. Markets run across the bar; clicking one
+       drops a panel of categories, and hovering a category reveals a
+       full-width row of its subcategories beneath the grid.
+       ------------------------------------------------------------ */
+    .market-nav {
+        @apply relative z-40 border-b border-line bg-ink;
+    }
+
+    .market-nav__bar {
+        @apply mx-auto flex w-full max-w-content items-stretch gap-2 px-5 sm:px-8 lg:px-10;
+    }
+
+    .market-nav__all {
+        @apply flex shrink-0 items-center gap-2 self-center border border-line px-4 py-2 font-display text-xs tracking-[0.2em] text-white uppercase transition-colors duration-300 hover:border-accent hover:text-accent;
+    }
+
+    .market-nav__list {
+        @apply flex flex-1 items-stretch gap-1 overflow-x-auto;
+        scrollbar-width: none;
+    }
+
+    .market-nav__list::-webkit-scrollbar {
+        display: none;
+    }
+
+    .market-nav__item {
+        @apply relative flex h-full items-center gap-2 border-b-2 border-transparent px-3 py-4 font-display text-xs tracking-[0.12em] whitespace-nowrap text-body uppercase transition-colors duration-300 hover:text-accent;
+    }
+
+    .market-nav__item[aria-expanded='true'] {
+        @apply border-accent text-accent;
+    }
+
+    .market-nav__item.is-active {
+        @apply border-accent text-accent;
+    }
+
+    .market-nav__chevron {
+        @apply transition-transform duration-300;
+    }
+
+    .market-nav__item[aria-expanded='true'] .market-nav__chevron {
+        transform: rotate(180deg);
+    }
+
+    .market-nav__panels {
+        @apply relative;
+    }
+
+    .market-nav__panel {
+        @apply border-b border-line bg-surface;
+    }
+
+    .market-nav__grid {
+        @apply grid gap-x-8 gap-y-2 py-8;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    }
+
+    .market-nav__node-link {
+        @apply flex items-center justify-between gap-2 py-1.5 font-body text-sm text-body transition-colors duration-200 hover:text-accent;
+    }
+
+    .market-nav__node:hover .market-nav__node-link,
+    .market-nav__node:focus-within .market-nav__node-link {
+        @apply text-accent;
+    }
+
+    /* Full-width row that sits below the category grid */
+    .market-nav__sub {
+        @apply col-span-full -mx-5 mt-3 border-t border-line bg-ink px-5 py-6 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10;
+        grid-column: 1 / -1;
+    }
+
+    .market-nav__sub-title {
+        @apply mb-4 inline-block font-display text-xs tracking-[0.2em] text-accent uppercase;
+    }
+
+    .market-nav__sub-list {
+        @apply flex flex-wrap gap-x-6 gap-y-2;
+    }
+
+    .market-nav__sub-link {
+        @apply font-body text-sm text-muted transition-colors duration-200 hover:text-accent;
+    }
 }
 
 /* Collapsible admin sidebar — unlayered so it beats the Tailwind

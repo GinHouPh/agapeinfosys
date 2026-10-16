@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -21,6 +22,7 @@ class ProductFactory extends Factory
         $name = ucwords($this->faker->unique()->words(2, true));
 
         return [
+            'category_id' => null,
             'name' => $name,
             'slug' => Str::slug($name),
             'domain' => Str::slug($name).'.com',
@@ -29,6 +31,16 @@ class ProductFactory extends Factory
             'is_active' => true,
             'sort_order' => $this->faker->numberBetween(0, 20),
         ];
+    }
+
+    /**
+     * Place the product inside a category.
+     */
+    public function inCategory(Category $category): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'category_id' => $category->getKey(),
+        ]);
     }
 
     /**

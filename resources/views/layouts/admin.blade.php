@@ -54,6 +54,7 @@
 
                 <p class="admin-sidebar__heading px-4 pt-6 pb-2 font-display text-[11px] tracking-[0.24em] text-muted uppercase">Commerce</p>
                 <x-admin-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')" label="Products" icon="products" />
+                <x-admin-link :href="route('admin.categories.index')" :active="request()->routeIs('admin.categories.*')" label="Categories" icon="categories" />
                 <x-admin-link :href="route('admin.plans.index')" :active="request()->routeIs('admin.plans.*')" label="Plans" icon="plans" />
                 <x-admin-link :href="route('admin.orders.index')" :active="request()->routeIs('admin.orders.*')" label="Orders" icon="orders" />
                 <x-admin-link :href="route('admin.shop-orders.index')" :active="request()->routeIs('admin.shop-orders.*')" label="Shop Orders" icon="shop-orders" />
@@ -114,6 +115,10 @@
             <main class="flex-1 px-5 py-8 sm:px-8">
                 @if (session('status'))
                     <p class="form-status" role="status">{{ session('status') }}</p>
+                @endif
+
+                @if (session('error'))
+                    <p class="form-status" role="alert">{{ session('error') }}</p>
                 @endif
 
                 @if ($errors->any())

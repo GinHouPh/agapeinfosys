@@ -109,6 +109,18 @@
         </div>
 
         <div class="field">
+            <label class="field__label" for="category_id">Marketplace category</label>
+            <select class="input" id="category_id" name="category_id">
+                <option value="">Uncategorised</option>
+                @foreach ($categories as $id => $label)
+                    <option value="{{ $id }}" @selected((int) old('category_id', $product?->category_id) === $id)>{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('category_id') <span class="field__error">{{ $message }}</span> @enderror
+            <span class="mt-1 block text-xs text-muted">Where this product appears in the shop's market menu.</span>
+        </div>
+
+        <div class="field">
             <label class="field__label" for="description">Description</label>
             <textarea class="input" id="description" name="description" rows="3">{{ old('description', $product?->description) }}</textarea>
             @error('description') <span class="field__error">{{ $message }}</span> @enderror
