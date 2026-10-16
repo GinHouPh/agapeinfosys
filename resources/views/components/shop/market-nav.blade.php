@@ -90,27 +90,27 @@
                                     </a>
                                 </div>
                             @endforeach
-
-                            @foreach ($market->children as $child)
-                                @if ($child->children->isNotEmpty())
-                                    <div class="market-nav__sub" data-market-sub="{{ $child->slug }}" hidden>
-                                        <a href="{{ route('shop.category', $child) }}" class="market-nav__sub-title">
-                                            All {{ $child->name }}
-                                        </a>
-
-                                        <ul class="market-nav__sub-list">
-                                            @foreach ($child->children as $grandchild)
-                                                <li>
-                                                    <a href="{{ route('shop.category', $grandchild) }}" class="market-nav__sub-link">
-                                                        {{ $grandchild->name }}
-                                                    </a>
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    </div>
-                                @endif
-                            @endforeach
                         </div>
+
+                        @foreach ($market->children as $child)
+                            @if ($child->children->isNotEmpty())
+                                <div class="market-nav__sub" data-market-sub="{{ $child->slug }}" hidden>
+                                    <a href="{{ route('shop.category', $child) }}" class="market-nav__sub-title">
+                                        All {{ $child->name }}
+                                    </a>
+
+                                    <ul class="market-nav__sub-list">
+                                        @foreach ($child->children as $grandchild)
+                                            <li>
+                                                <a href="{{ route('shop.category', $grandchild) }}" class="market-nav__sub-link">
+                                                    {{ $grandchild->name }}
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                        @endforeach
                     </div>
                 </div>
             @endif

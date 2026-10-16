@@ -684,12 +684,16 @@ html.light {
     }
 
     .market-nav__grid {
-        @apply grid gap-x-8 gap-y-2 py-8;
-        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        @apply flex items-center gap-x-6 overflow-x-auto py-6 whitespace-nowrap;
+        scrollbar-width: none;
+    }
+
+    .market-nav__grid::-webkit-scrollbar {
+        display: none;
     }
 
     .market-nav__node-link {
-        @apply flex items-center justify-between gap-2 py-1.5 font-body text-[13px] text-body transition-colors duration-200 hover:text-accent;
+        @apply flex items-center gap-2 py-1.5 font-body text-[13px] text-body transition-colors duration-200 hover:text-accent;
     }
 
     .market-nav__node:hover .market-nav__node-link,
@@ -697,10 +701,9 @@ html.light {
         @apply text-accent;
     }
 
-    /* Full-width row that sits below the category grid */
+    /* Full-width row of subcategories shown beneath the category row */
     .market-nav__sub {
-        @apply col-span-full -mx-5 mt-3 border-t border-line bg-ink px-5 py-6 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10;
-        grid-column: 1 / -1;
+        @apply -mx-5 mt-0 mb-6 border-t border-line bg-ink px-5 py-6 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10;
     }
 
     .market-nav__sub-title {
