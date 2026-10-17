@@ -2,7 +2,7 @@
     'showMark' => true,
     'showText' => true,
     'iconClass' => 'grid h-9 w-9 shrink-0 place-items-center border border-line font-display text-base tracking-normal text-accent',
-    'iconImgClass' => 'h-1/2 w-1/2 object-contain',
+    'iconImgClass' => 'h-full w-full object-contain',
     'fullImgClass' => 'h-9 w-auto max-w-[14rem] object-contain',
     'textClass' => 'font-display text-lg tracking-[0.22em] text-white uppercase',
     'class' => 'inline-flex items-center gap-3',
