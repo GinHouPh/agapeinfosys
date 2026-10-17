@@ -62,6 +62,10 @@
                             @error('password') <span class="field__error">{{ $message }}</span> @enderror
                         </div>
 
+                        <div class="-mt-4 flex justify-end">
+                            <a href="{{ route('password.request') }}" class="text-sm text-accent hover:underline">Forgot password?</a>
+                        </div>
+
                         <label class="flex items-center gap-3 text-sm text-muted">
                             <input type="checkbox" name="remember" value="1" class="h-4 w-4 accent-[#d90429]" @checked(old('remember'))>
                             Keep me signed in

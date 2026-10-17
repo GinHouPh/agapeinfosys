@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FormatsMoney;
 use Database\Factories\ShopOrderItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ShopOrderItem extends Model
 {
     /** @use HasFactory<ShopOrderItemFactory> */
-    use HasFactory;
+    use FormatsMoney, HasFactory;
 
     protected $fillable = [
         'shop_order_id',
@@ -50,5 +51,13 @@ class ShopOrderItem extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    /**
+     * Line price rendered for humans, e.g. "₹4,999.00".
+     */
+    public function formattedUnitPrice(): string
+    {
+        return $this->formatMoney($this->unit_price, $this->currency);
     }
 }

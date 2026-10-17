@@ -25,6 +25,8 @@ use App\Http\Controllers\Admin\SubscriptionController as AdminSubscriptionContro
 use App\Http\Controllers\Admin\TestimonialController as AdminTestimonialController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\LoginController as ClientLoginController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisterController as ClientRegisterController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ContactController;
@@ -121,6 +123,19 @@ Route::get('/register', [ClientRegisterController::class, 'create'])->name('regi
 Route::post('/register', [ClientRegisterController::class, 'store'])
     ->middleware('throttle:3,1')
     ->name('register.store');
+
+/*
+| Password reset for client accounts. The reset link is emailed by the
+| password broker and consumed on the reset route.
+*/
+Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
+    ->middleware('throttle:6,1')
+    ->name('password.email');
+Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+Route::post('/reset-password', [NewPasswordController::class, 'store'])
+    ->middleware('throttle:6,1')
+    ->name('password.update');
 
 Route::prefix('dashboard')->middleware('auth')->group(function (): void {
     Route::post('/logout', [ClientLoginController::class, 'destroy'])->name('logout');

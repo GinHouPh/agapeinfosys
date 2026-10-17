@@ -3,12 +3,14 @@
 namespace App\Services\Shop;
 
 use App\Enums\OrderStatus;
+use App\Mail\ShopOrderReceipt;
 use App\Models\Order;
 use App\Models\PaymentEvent;
 use App\Models\Plan;
 use App\Models\Product;
 use App\Models\ShopOrder;
 use App\Models\ShopOrderItem;
+use App\Notifications\NewOrderNotification;
 use App\Services\Payments\CheckoutService as OrderCheckoutService;
 use App\Services\Payments\CustomerKey;
 use App\Services\Payments\DTOs\CheckoutSession;
@@ -16,6 +18,7 @@ use App\Services\Payments\Exceptions\GatewayException;
 use App\Services\Payments\GatewayManager;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Turns a cart into one provider payment, then fans the confirmed cart out
@@ -120,8 +123,22 @@ class CheckoutService
                 $this->fanOut($shopOrder, $item, $index, $direction);
             }
 
+            $this->sendReceipts($shopOrder);
+
             return true;
         });
+    }
+
+    /**
+     * Email the buyer one cart receipt and alert the admins, after commit.
+     */
+    private function sendReceipts(ShopOrder $shopOrder): void
+    {
+        if (is_string($shopOrder->email) && $shopOrder->email !== '') {
+            Mail::to($shopOrder->email)->send((new ShopOrderReceipt($shopOrder))->afterCommit());
+        }
+
+        NewOrderNotification::sendToAdmins($shopOrder);
     }
 
     /**
@@ -154,7 +171,7 @@ class CheckoutService
             'driver' => $shopOrder->gateway?->driver,
             'reference' => $order->reference,
             'shop_reference' => $shopOrder->reference,
-        ], $direction);
+        ], $direction, false);
 
         return $order;
     }

@@ -5,12 +5,15 @@ namespace App\Services\Payments;
 use App\Enums\OrderStatus;
 use App\Enums\SubscriptionStatus;
 use App\Jobs\SendEntitlementWebhook;
+use App\Mail\OrderReceipt;
 use App\Models\Order;
 use App\Models\PaymentEvent;
 use App\Models\Product;
 use App\Models\Subscription;
+use App\Notifications\NewOrderNotification;
 use App\Services\Payments\Exceptions\GatewayException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Creates pending checkout orders and completes them exactly once.
@@ -92,9 +95,9 @@ class CheckoutService
      *
      * @param  array<string, mixed>  $payload
      */
-    public function complete(Order $order, array $payload = [], string $direction = 'inbound'): bool
+    public function complete(Order $order, array $payload = [], string $direction = 'inbound', bool $notifyCustomer = true): bool
     {
-        return DB::transaction(function () use ($order, $payload, $direction): bool {
+        return DB::transaction(function () use ($order, $payload, $direction, $notifyCustomer): bool {
             $event = PaymentEvent::create([
                 'payment_gateway_id' => $order->payment_gateway_id,
                 'order_id' => $order->getKey(),
@@ -121,8 +124,26 @@ class CheckoutService
 
             SendEntitlementWebhook::dispatch($order->getKey())->afterCommit();
 
+            // A cart fan-out passes $notifyCustomer = false so the buyer gets
+            // one receipt for the whole cart, not one per line.
+            if ($notifyCustomer) {
+                $this->sendReceipts($order);
+            }
+
             return true;
         });
+    }
+
+    /**
+     * Email the buyer their receipt and alert the admins, after commit.
+     */
+    private function sendReceipts(Order $order): void
+    {
+        if (is_string($order->email) && $order->email !== '') {
+            Mail::to($order->email)->send((new OrderReceipt($order))->afterCommit());
+        }
+
+        NewOrderNotification::sendToAdmins($order);
     }
 
     /**
