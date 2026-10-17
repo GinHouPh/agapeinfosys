@@ -25,10 +25,7 @@
     <div class="flex min-h-screen">
         <aside data-admin-sidebar class="admin-sidebar sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line bg-ink lg:flex">
             <a href="{{ route('home') }}" class="admin-sidebar__brand flex h-20 items-center gap-3 border-b border-line px-6" title="AgapeInfosys">
-                <span class="grid h-9 w-9 shrink-0 place-items-center border border-line font-display text-base text-accent">A</span>
-                <span class="admin-sidebar__text font-display text-sm tracking-[0.2em] text-white uppercase">
-                    Agape<span class="text-accent">Infosys</span>
-                </span>
+                <x-brand text-class="admin-sidebar__text font-display text-sm tracking-[0.2em] text-white uppercase" />
             </a>
 
             <nav class="admin-sidebar__nav flex-1 space-y-1 overflow-y-auto p-4" aria-label="Admin">
@@ -91,7 +88,7 @@
                         </svg>
                     </button>
                     <a href="{{ route('home') }}" class="lg:hidden">
-                        <span class="grid h-9 w-9 place-items-center border border-line font-display text-base text-accent">A</span>
+                        <x-brand :show-text="false" />
                     </a>
                     <h1 class="font-display text-lg tracking-[0.1em] text-white capitalize">
                         @yield('heading', 'Dashboard')

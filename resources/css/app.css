@@ -753,6 +753,18 @@ html[data-admin-sidebar='collapsed'] .admin-sidebar .admin-sidebar__brand {
     padding-right: 0;
 }
 
+/* Brand logo — the dark and light variants both render; only the one that
+   matches the theme class on <html> is shown, so the logo swaps with the
+   theme toggle. Unlayered so it beats the display utilities on the element. */
+.brand {
+    display: none;
+}
+
+html.dark .brand--dark,
+html.light .brand--light {
+    display: inline-flex;
+}
+
 /* Prose styling for long-form article and case study bodies */
 .prose-dark {
     @apply space-y-6 text-base leading-relaxed text-body;

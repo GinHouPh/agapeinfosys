@@ -9,7 +9,7 @@
         contact page and every frontend surface that discloses company information.
     </p>
 
-    <form action="{{ route('admin.business.update') }}" method="POST" class="space-y-8">
+    <form action="{{ route('admin.business.update') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
         @csrf
         @method('PUT')
 
@@ -53,6 +53,75 @@
                            value="{{ old('industry', $business['industry'] ?? '') }}" placeholder="Software Development & Digital Products">
                     @error('industry') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
+            </div>
+        </div>
+
+        <div class="admin-card space-y-6">
+            <h3 class="border-b border-line pb-4 font-display text-sm tracking-[0.24em] text-white uppercase">Logo</h3>
+
+            <p class="text-xs text-muted">
+                Your logo appears in the site header, footer, admin sidebar and login. Configure a
+                different mark for the dark and light themes, or keep the built-in wordmark. A square
+                icon sits beside the brand name; a full logo image replaces both the mark and the text.
+                SVG, PNG, WEBP or JPG up to 4&nbsp;MB.
+            </p>
+
+            <div class="grid gap-8 lg:grid-cols-2">
+                @foreach (['dark' => 'Dark theme', 'light' => 'Light theme'] as $theme => $label)
+                    @php
+                        $logo = $brand_logos[$theme] ?? ['mode' => 'default', 'full' => null, 'icon' => null];
+                        $mode = old("logos.$theme.mode", $logo['mode']);
+                        $full = $logo['full'];
+                        $icon = $logo['icon'];
+                    @endphp
+
+                    <div class="space-y-4 border border-line p-5" data-logo-group>
+                        <div class="flex items-center justify-between gap-3">
+                            <h4 class="font-display text-xs tracking-[0.24em] text-white uppercase">{{ $label }}</h4>
+                            @if ($theme === 'dark')
+                                <span class="tag">Default theme</span>
+                            @endif
+                        </div>
+
+                        <div class="field">
+                            <label class="field__label" for="logo_mode_{{ $theme }}">Logo style</label>
+                            <select class="input" id="logo_mode_{{ $theme }}" name="logos[{{ $theme }}][mode]" data-logo-mode>
+                                <option value="default" @selected($mode === 'default')>Built-in wordmark</option>
+                                <option value="full" @selected($mode === 'full')>Full logo image</option>
+                                <option value="icon" @selected($mode === 'icon')>Square icon + text</option>
+                            </select>
+                            @error("logos.$theme.mode") <span class="field__error">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="field" data-logo-field="full" @if ($mode !== 'full') hidden @endif>
+                            <label class="field__label" for="logo_full_{{ $theme }}">Full logo image</label>
+                            <input class="input" type="file" id="logo_full_{{ $theme }}" name="logos[{{ $theme }}][full]" accept="image/*">
+                            @if ($full)
+                                <span class="mt-2 block text-xs text-muted">
+                                    Current:
+                                    <img src="{{ Storage::url($full) }}" alt="" class="ml-1 inline-block h-6 w-auto align-middle object-contain">
+                                </span>
+                            @endif
+                            @error("logos.$theme.full") <span class="field__error">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="field" data-logo-field="icon" @if ($mode !== 'icon') hidden @endif>
+                            <label class="field__label" for="logo_icon_{{ $theme }}">Square icon</label>
+                            <input class="input" type="file" id="logo_icon_{{ $theme }}" name="logos[{{ $theme }}][icon]" accept="image/*">
+                            @if ($icon)
+                                <span class="mt-2 block text-xs text-muted">
+                                    Current:
+                                    <img src="{{ Storage::url($icon) }}" alt="" class="ml-1 inline-block h-8 w-8 align-middle object-contain">
+                                </span>
+                            @endif
+                            @error("logos.$theme.icon") <span class="field__error">{{ $message }}</span> @enderror
+                        </div>
+
+                        <p class="text-xs text-muted" data-logo-field="default" @if ($mode !== 'default') hidden @endif>
+                            Using the built-in <strong class="text-white">{{ $business['brand_name'] ?? 'Agape Infosys' }}</strong> wordmark.
+                        </p>
+                    </div>
+                @endforeach
             </div>
         </div>
 

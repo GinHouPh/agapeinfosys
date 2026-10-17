@@ -63,12 +63,7 @@
         </div>
 
         <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-3 justify-self-center" aria-label="{{ config('app.name') }} home">
-            <span class="grid h-9 w-9 shrink-0 place-items-center border border-line font-display text-base tracking-normal text-accent">
-                A
-            </span>
-            <span class="hidden font-display text-lg tracking-[0.22em] text-white uppercase sm:inline">
-                Agape<span class="text-accent">Infosys</span>
-            </span>
+            <x-brand text-class="hidden font-display text-lg tracking-[0.22em] text-white uppercase sm:inline" />
         </a>
 
         <div class="flex items-center justify-end gap-4">

@@ -304,6 +304,27 @@ const initMarketNav = () => {
     });
 };
 
+const initBrandLogoFields = () => {
+    document.querySelectorAll('[data-logo-mode]').forEach((select) => {
+        const group = select.closest('[data-logo-group]');
+
+        if (!group) {
+            return;
+        }
+
+        const fields = Array.from(group.querySelectorAll('[data-logo-field]'));
+
+        const sync = () => {
+            fields.forEach((field) => {
+                field.hidden = field.dataset.logoField !== select.value;
+            });
+        };
+
+        select.addEventListener('change', sync);
+        sync();
+    });
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     initNav();
     initSearch();
@@ -312,6 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initYear();
     initAdminSidebar();
     initMarketNav();
+    initBrandLogoFields();
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
 });

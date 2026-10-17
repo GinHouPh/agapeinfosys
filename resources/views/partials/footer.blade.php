@@ -91,9 +91,7 @@
         <div class="border-t border-line">
             <div class="shell flex flex-col items-center justify-between gap-4 py-7 sm:flex-row">
                 <a href="{{ route('home') }}" class="flex items-center gap-3">
-                    <span class="font-display text-base tracking-[0.22em] text-white uppercase">
-                        Agape<span class="text-accent">Infosys</span>
-                    </span>
+                    <x-brand :show-mark="false" text-class="font-display text-base tracking-[0.22em] text-white uppercase" />
                 </a>
 
                 <p class="text-sm text-muted">

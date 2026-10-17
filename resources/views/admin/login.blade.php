@@ -14,10 +14,7 @@
     <main class="flex min-h-screen items-center justify-center px-5 py-16">
         <div class="w-full max-w-md">
             <a href="{{ route('home') }}" class="mb-10 flex items-center justify-center gap-3">
-                <span class="grid h-10 w-10 place-items-center border border-line font-display text-lg text-accent">A</span>
-                <span class="font-display text-lg tracking-[0.22em] text-white uppercase">
-                    Agape<span class="text-accent">Infosys</span>
-                </span>
+                <x-brand icon-class="grid h-10 w-10 place-items-center border border-line font-display text-lg text-accent" />
             </a>
 
             <div class="border border-line bg-surface p-8 sm:p-10">

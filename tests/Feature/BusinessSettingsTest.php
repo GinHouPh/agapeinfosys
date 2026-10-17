@@ -6,6 +6,8 @@ use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class BusinessSettingsTest extends TestCase
@@ -113,5 +115,94 @@ class BusinessSettingsTest extends TestCase
             ->assertSessionHasErrors(['contact_email', 'socials.linkedin']);
 
         $this->assertSame('hello@agapeinfosys.com', Setting::value('contact_email'));
+    }
+
+    public function test_the_built_in_wordmark_renders_by_default(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('brand--dark', false)
+            ->assertSee('Agape<span class="text-accent">Infosys</span>', false);
+    }
+
+    public function test_a_full_logo_image_can_be_uploaded_for_a_theme(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs($this->admin)
+            ->put(route('admin.business.update'), array_merge($this->validPayload(), [
+                'logos' => [
+                    'dark' => ['mode' => 'full', 'full' => UploadedFile::fake()->image('dark-logo.png')],
+                ],
+            ]))
+            ->assertRedirect(route('admin.business.edit'));
+
+        $logos = Setting::structured('brand_logos');
+
+        $this->assertSame('full', $logos['dark']['mode']);
+        $this->assertNull($logos['light']['full']);
+        Storage::disk('public')->assertExists($logos['dark']['full']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee($logos['dark']['full'], false);
+    }
+
+    public function test_a_square_icon_renders_beside_the_brand_name(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs($this->admin)
+            ->put(route('admin.business.update'), array_merge($this->validPayload(), [
+                'logos' => [
+                    'dark' => ['mode' => 'icon', 'icon' => UploadedFile::fake()->image('mark.png')],
+                ],
+            ]))
+            ->assertRedirect(route('admin.business.edit'));
+
+        $logos = Setting::structured('brand_logos');
+
+        $this->assertSame('icon', $logos['dark']['mode']);
+        Storage::disk('public')->assertExists($logos['dark']['icon']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee($logos['dark']['icon'], false);
+    }
+
+    public function test_a_replaced_logo_image_is_pruned(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs($this->admin)
+            ->put(route('admin.business.update'), array_merge($this->validPayload(), [
+                'logos' => [
+                    'dark' => ['mode' => 'full', 'full' => UploadedFile::fake()->image('first.png')],
+                ],
+            ]));
+
+        $first = Setting::structured('brand_logos')['dark']['full'];
+
+        $this->actingAs($this->admin)
+            ->put(route('admin.business.update'), array_merge($this->validPayload(), [
+                'logos' => [
+                    'dark' => ['mode' => 'full', 'full' => UploadedFile::fake()->image('second.png')],
+                ],
+            ]));
+
+        $second = Setting::structured('brand_logos')['dark']['full'];
+
+        $this->assertNotSame($first, $second);
+        Storage::disk('public')->assertMissing($first);
+        Storage::disk('public')->assertExists($second);
+    }
+
+    public function test_an_invalid_logo_mode_is_rejected(): void
+    {
+        $this->actingAs($this->admin)
+            ->put(route('admin.business.update'), array_merge($this->validPayload(), [
+                'logos' => ['dark' => ['mode' => 'banner']],
+            ]))
+            ->assertSessionHasErrors('logos.dark.mode');
     }
 }
