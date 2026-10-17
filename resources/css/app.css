@@ -765,6 +765,22 @@ html.light .brand--light {
     display: inline-flex;
 }
 
+/* Native <select> menus are painted by the OS, not by our tokens, so a field
+   on a dark surface can still drop a white menu behind white option text.
+   Pin the control's colour scheme and the option colours to the active theme. */
+select {
+    color-scheme: dark;
+}
+
+html.light select {
+    color-scheme: light;
+}
+
+select option {
+    background-color: var(--color-box);
+    color: var(--color-body);
+}
+
 /* Prose styling for long-form article and case study bodies */
 .prose-dark {
     @apply space-y-6 text-base leading-relaxed text-body;

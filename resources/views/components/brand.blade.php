@@ -2,7 +2,7 @@
     'showMark' => true,
     'showText' => true,
     'iconClass' => 'grid h-9 w-9 shrink-0 place-items-center border border-line font-display text-base tracking-normal text-accent',
-    'markImgClass' => 'h-9 w-9 shrink-0 object-contain',
+    'iconImgClass' => 'h-1/2 w-1/2 object-contain',
     'fullImgClass' => 'h-9 w-auto max-w-[14rem] object-contain',
     'textClass' => 'font-display text-lg tracking-[0.22em] text-white uppercase',
     'class' => 'inline-flex items-center gap-3',
@@ -37,7 +37,9 @@
         @else
             @if ($showMark)
                 @if ($mode === 'icon' && $icon)
-                    <img src="{{ Storage::url($icon) }}" alt="{{ $brandName }}" class="{{ $markImgClass }}">
+                    <span class="{{ $iconClass }}">
+                        <img src="{{ Storage::url($icon) }}" alt="{{ $brandName }}" class="{{ $iconImgClass }}">
+                    </span>
                 @else
                     <span class="{{ $iconClass }}">{{ $initial }}</span>
                 @endif
