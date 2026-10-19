@@ -147,6 +147,60 @@ class CheckoutService
     }
 
     /**
+     * Extend a mandate's entitlement when a recurring charge settles.
+     *
+     * The initial activation runs through complete(); only later successful
+     * charges renew here. The provider payment id de-duplicates retried
+     * webhooks so a cycle is never granted twice.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function extendSubscriptionFromWebhook(Order $order, string $driver, string $eventType, array $payload): void
+    {
+        if ($driver !== 'cashfree' || $eventType !== 'SUBSCRIPTION_PAYMENT_SUCCESS') {
+            return;
+        }
+
+        $paymentId = (string) (
+            data_get($payload, 'data.payment.cf_payment_id')
+            ?? data_get($payload, 'data.payment.payment_id')
+            ?? ''
+        );
+
+        // Without a payment id a retried webhook cannot be told apart from a
+        // genuine new charge, so it is safer to leave the entitlement alone.
+        if ($paymentId === '') {
+            return;
+        }
+
+        $subscription = $order->subscription()->first();
+
+        if ($subscription === null) {
+            return;
+        }
+
+        $meta = $subscription->meta ?? [];
+
+        if (($meta['last_renewed_payment_id'] ?? null) === $paymentId) {
+            return;
+        }
+
+        $days = $order->plan?->entitlementDays() ?? 30;
+
+        $from = $subscription->ends_at !== null && $subscription->ends_at->isFuture()
+            ? $subscription->ends_at->copy()
+            : now();
+
+        $subscription->forceFill([
+            'status' => SubscriptionStatus::Active,
+            'starts_at' => $subscription->starts_at ?? now(),
+            'ends_at' => $from->copy()->addDays($days),
+            'renews_at' => $from->copy()->addDays($days),
+            'meta' => array_merge($meta, ['last_renewed_payment_id' => $paymentId]),
+        ])->save();
+    }
+
+    /**
      * Extend or create the subscriber's entitlement for this order's plan.
      */
     private function grantEntitlement(Order $order): Subscription

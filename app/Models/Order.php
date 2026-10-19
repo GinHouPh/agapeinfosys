@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\OrderStatus;
 use App\Models\Concerns\FormatsMoney;
 use App\Services\Payments\Contracts\Payable;
+use App\Services\Payments\DTOs\SubscriptionTerms;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -221,6 +222,32 @@ class Order extends Model implements Payable
     public function paymentPhone(): ?string
     {
         return $this->phone;
+    }
+
+    /**
+     * A recurring plan charges through the mandate API; everything else is a
+     * one-time order. The Cashfree plan id is stable per product+plan so
+     * re-checkouts reuse the same provider plan.
+     */
+    public function paymentSubscriptionTerms(): ?SubscriptionTerms
+    {
+        $plan = $this->plan;
+
+        if ($plan === null || ! $plan->isRecurring()) {
+            return null;
+        }
+
+        [$intervalType, $intervals] = SubscriptionTerms::cadenceFromDays($plan->interval_days ?? 30);
+
+        return new SubscriptionTerms(
+            planId: 'agape-'.$this->product?->slug.'-'.$plan->code,
+            planName: $plan->name,
+            intervalType: $intervalType,
+            intervals: $intervals,
+            recurringAmount: $this->amount,
+            maxAmount: $this->amount,
+            currency: (string) $this->currency,
+        );
     }
 
     /**

@@ -100,6 +100,16 @@
                 var cashfree = Cashfree({ mode: payload.mode });
 
                 function openCheckout() {
+                    // Recurring plans open the mandate (subscription) checkout.
+                    if (payload.subscription_session_id) {
+                        cashfree.subscriptionsCheckout({
+                            subsSessionId: payload.subscription_session_id,
+                            redirectTarget: '_self',
+                        });
+
+                        return;
+                    }
+
                     cashfree.checkout({
                         paymentSessionId: payload.payment_session_id,
                         redirectTarget: '_self',

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\OrderStatus;
 use App\Models\Concerns\FormatsMoney;
 use App\Services\Payments\Contracts\Payable;
+use App\Services\Payments\DTOs\SubscriptionTerms;
 use Database\Factories\ShopOrderFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -189,6 +190,15 @@ class ShopOrder extends Model implements Payable
     public function paymentPhone(): ?string
     {
         return $this->phone;
+    }
+
+    /**
+     * A cart is always a single one-time charge; recurring items become
+     * their own orders through the plan checkout instead.
+     */
+    public function paymentSubscriptionTerms(): ?SubscriptionTerms
+    {
+        return null;
     }
 
     /**

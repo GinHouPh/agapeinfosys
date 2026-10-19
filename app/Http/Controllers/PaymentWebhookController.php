@@ -51,13 +51,19 @@ class PaymentWebhookController extends Controller
                 return response('unconfirmed', 200);
             }
 
-            $this->checkout->complete($order, [
+            $completed = $this->checkout->complete($order, [
                 'event' => $eventType,
                 'driver' => $driver,
                 'signature_valid' => $signatureValid,
                 'reference' => $order->reference,
                 'signature' => $request->header('x-webhook-signature') ?? $request->header('X-Signature'),
             ], 'inbound');
+
+            // A charge for an order that is already paid is a renewal, not
+            // the initial activation - extend the entitlement instead.
+            if (! $completed) {
+                $this->checkout->extendSubscriptionFromWebhook($order, $driver, $eventType, $request->json()->all());
+            }
 
             return response('ok', 200);
         }
@@ -98,7 +104,11 @@ class PaymentWebhookController extends Controller
                 (string) ($payload['code'] ?? 'phonepe.event'),
             ],
             'cashfree' => [
-                data_get($payload, 'data.order.order_id') ?? data_get($payload, 'data.payment.order_id'),
+                data_get($payload, 'data.order.order_id')
+                    ?? data_get($payload, 'data.payment.order_id')
+                    // Subscription webhooks carry our subscription id (the
+                    // original order reference) instead of an order id.
+                    ?? data_get($payload, 'data.subscription_details.subscription_id'),
                 (string) ($payload['type'] ?? 'cashfree.event'),
             ],
             'payu' => [

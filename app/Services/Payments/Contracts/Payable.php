@@ -2,6 +2,8 @@
 
 namespace App\Services\Payments\Contracts;
 
+use App\Services\Payments\DTOs\SubscriptionTerms;
+
 /**
  * Anything the payment drivers can charge through a provider.
  *
@@ -54,6 +56,12 @@ interface Payable
     public function paymentEmail(): ?string;
 
     public function paymentPhone(): ?string;
+
+    /**
+     * Recurring terms when this payable must be charged through a mandate
+     * (subscription) API, or null for a plain one-time payment.
+     */
+    public function paymentSubscriptionTerms(): ?SubscriptionTerms;
 
     /**
      * Provider payload stored so far, for merging fresh data into.
