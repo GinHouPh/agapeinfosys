@@ -332,4 +332,15 @@ class AdminCommerceTest extends TestCase
             ->assertSee('Paypal')
             ->assertSee('Sandbox');
     }
+
+    public function test_gateway_edit_shows_the_webhook_url_to_register(): void
+    {
+        $gateway = PaymentGateway::factory()->create(['driver' => 'cashfree', 'name' => 'Cashfree']);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.gateways.edit', $gateway))
+            ->assertOk()
+            ->assertSee('Webhook URL')
+            ->assertSee(route('checkout.webhook', 'cashfree'), false);
+    }
 }

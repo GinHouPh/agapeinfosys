@@ -120,6 +120,32 @@
                     </dl>
                 </div>
 
+                @if ($fields !== [])
+                    <div class="admin-card space-y-3">
+                        <h3 class="font-display text-sm tracking-[0.2em] text-white uppercase">Webhook URL</h3>
+
+                        <p class="text-xs text-muted">
+                            Paste this into {{ $gateway->name }} &rarr; Developers &rarr; Webhooks and
+                            select the order and subscription events. It must be the public HTTPS
+                            domain serving this app (not localhost).
+                        </p>
+
+                        <div class="flex items-center gap-2">
+                            <input
+                                class="input flex-1 text-xs"
+                                type="text"
+                                id="webhook-url"
+                                value="{{ route('checkout.webhook', $gateway->driver) }}"
+                                readonly
+                                onfocus="this.select()"
+                            >
+                            <button type="button" class="tag hover:border-accent hover:text-accent" id="copy-webhook">
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+                @endif
+
                 <div class="flex gap-4">
                     <button type="submit" class="btn btn--accent">
                         Save gateway
@@ -132,3 +158,26 @@
         </div>
     </form>
 @endsection
+
+@push('scripts')
+    @if ($fields !== [])
+        <script>
+            (function () {
+                var button = document.getElementById('copy-webhook');
+                var input = document.getElementById('webhook-url');
+
+                if (!button || !input) {
+                    return;
+                }
+
+                button.addEventListener('click', function () {
+                    input.select();
+                    navigator.clipboard.writeText(input.value).then(function () {
+                        button.textContent = 'Copied';
+                        setTimeout(function () { button.textContent = 'Copy'; }, 1500);
+                    });
+                });
+            })();
+        </script>
+    @endif
+@endpush
