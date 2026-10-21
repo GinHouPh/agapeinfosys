@@ -11,6 +11,12 @@ class RichTextWidget extends GenericWidget
     {
         return [
             'name' => 'rich-text',
+            // Version 2: every repeater row carries an id of its own, so a row can
+            // be addressed on its own rather than by its position.
+            'version' => 2,
+            'migrations' => [
+                1 => ['row_id' => ['paragraphs']],
+            ],
             'title' => 'Text',
             'category' => 'Content',
             'description' => 'A heading and body paragraphs with no imagery.',

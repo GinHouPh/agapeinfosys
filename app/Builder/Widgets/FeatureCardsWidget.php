@@ -11,6 +11,12 @@ class FeatureCardsWidget extends GenericWidget
     {
         return [
             'name' => 'feature-cards',
+            // Version 2: every repeater row carries an id of its own, so a row can
+            // be addressed on its own rather than by its position.
+            'version' => 2,
+            'migrations' => [
+                1 => ['row_id' => ['cards']],
+            ],
             'title' => 'Feature Cards',
             'category' => 'Content',
             'description' => 'A responsive grid of bordered cards, each with a title and short body.',

@@ -11,6 +11,12 @@ class ValuesGridWidget extends GenericWidget
     {
         return [
             'name' => 'values',
+            // Version 2: every repeater row carries an id of its own, so a row can
+            // be addressed on its own rather than by its position.
+            'version' => 2,
+            'migrations' => [
+                1 => ['row_id' => ['values']],
+            ],
             'title' => 'Values',
             'category' => 'Content',
             'description' => 'A row of numbered value cards describing what the business stands for.',

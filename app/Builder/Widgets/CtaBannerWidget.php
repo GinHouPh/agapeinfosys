@@ -11,6 +11,12 @@ class CtaBannerWidget extends GenericWidget
     {
         return [
             'name' => 'cta-banner',
+            // Version 2: every repeater row carries an id of its own, so a row can
+            // be addressed on its own rather than by its position.
+            'version' => 2,
+            'migrations' => [
+                1 => ['row_id' => ['buttons']],
+            ],
             'title' => 'CTA Banner',
             'category' => 'Layout',
             'description' => 'A centred closing call to action with one or two buttons.',

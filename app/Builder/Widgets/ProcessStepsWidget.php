@@ -11,6 +11,12 @@ class ProcessStepsWidget extends GenericWidget
     {
         return [
             'name' => 'process-steps',
+            // Version 2: every repeater row carries an id of its own, so a row can
+            // be addressed on its own rather than by its position.
+            'version' => 2,
+            'migrations' => [
+                1 => ['row_id' => ['steps']],
+            ],
             'title' => 'Process Steps',
             'category' => 'Content',
             'description' => 'A numbered sequence of steps describing how you work.',

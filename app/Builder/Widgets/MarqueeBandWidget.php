@@ -11,6 +11,12 @@ class MarqueeBandWidget extends GenericWidget
     {
         return [
             'name' => 'marquee-band',
+            // Version 2: every repeater row carries an id of its own, so a row can
+            // be addressed on its own rather than by its position.
+            'version' => 2,
+            'migrations' => [
+                1 => ['row_id' => ['words']],
+            ],
             'title' => 'Marquee Band',
             'category' => 'Layout',
             'description' => 'A bordered band of scrolling words — great for listing capabilities or keywords.',

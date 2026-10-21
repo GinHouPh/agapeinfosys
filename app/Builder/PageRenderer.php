@@ -23,11 +23,19 @@ class PageRenderer
     /**
      * Render every block of a page in order.
      *
+     * A page rendered for a visitor is rendered in their language, so the
+     * translated settings are applied first. The builder canvas and the
+     * preview endpoint ask for the original text.
+     *
      * @param  array<string, mixed>  $context
      */
     public function render(Page $page, array $context = []): string
     {
-        return $this->renderBlocks($page->blocks(), $context);
+        $blocks = ($context['authoring'] ?? false)
+            ? $page->blocks()
+            : $page->localisedBlocks();
+
+        return $this->renderBlocks($blocks, $context);
     }
 
     /**

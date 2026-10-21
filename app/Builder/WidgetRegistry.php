@@ -4,6 +4,7 @@ namespace App\Builder;
 
 use App\Builder\Contracts\Widget;
 use App\Builder\Widgets\ClientsMarqueeWidget;
+use App\Builder\Widgets\CollectionGridWidget;
 use App\Builder\Widgets\ContactSectionWidget;
 use App\Builder\Widgets\CtaBannerWidget;
 use App\Builder\Widgets\CtaCardWidget;
@@ -73,6 +74,7 @@ class WidgetRegistry
         RecordCoverWidget::class,
         RecordBodyWidget::class,
         RecordRelatedWidget::class,
+        CollectionGridWidget::class,
     ];
 
     /**

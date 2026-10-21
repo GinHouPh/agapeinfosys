@@ -58,11 +58,43 @@ abstract class GenericWidget implements Widget
     }
 
     /**
-     * Whether this widget holds other blocks. Declared per widget in config.
+     * Whether the widget holds other blocks. Declared per widget in config.
      */
     public function isContainer(): bool
     {
         return (bool) (static::config()['container'] ?? false);
+    }
+
+    /**
+     * The version of this widget's settings shape.
+     *
+     * A page records the version of every block it holds. When a widget
+     * changes shape — a setting is renamed, a control is removed — the
+     * page's blocks are migrated forward, so an old page keeps rendering
+     * with the widget as it is now.
+     */
+    public function version(): int
+    {
+        return (int) (static::config()['version'] ?? 1);
+    }
+
+    /**
+     * The migrations that carry a block from one version to the next.
+     *
+     * Keyed by the version being migrated FROM. Each entry is a list of
+     * operations:
+     *
+     * - `rename`  — a map of old setting key => new setting key.
+     * - `drop`    — setting keys to remove.
+     * - `default` — a map of setting key => value to set when it is absent.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function migrations(): array
+    {
+        $migrations = static::config()['migrations'] ?? [];
+
+        return is_array($migrations) ? $migrations : [];
     }
 
     /**

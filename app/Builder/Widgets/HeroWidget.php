@@ -15,6 +15,12 @@ class HeroWidget extends GenericWidget
     {
         return [
             'name' => 'hero',
+            // Version 2: every repeater row carries an id of its own, so a row can
+            // be addressed on its own rather than by its position.
+            'version' => 2,
+            'migrations' => [
+                1 => ['row_id' => ['buttons', 'card_stats']],
+            ],
             'title' => 'Hero',
             'category' => 'Layout',
             'description' => 'Full-screen opening section with a heading, lead text, buttons and a stat card.',

@@ -11,6 +11,12 @@ class MediaTextWidget extends GenericWidget
     {
         return [
             'name' => 'media-text',
+            // Version 2: every repeater row carries an id of its own, so a row can
+            // be addressed on its own rather than by its position.
+            'version' => 2,
+            'migrations' => [
+                1 => ['row_id' => ['paragraphs', 'images']],
+            ],
             'title' => 'Media & Text',
             'category' => 'Content',
             'description' => 'A two-column block pairing images with a heading, paragraphs and a button.',

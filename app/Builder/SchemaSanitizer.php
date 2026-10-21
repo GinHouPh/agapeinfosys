@@ -70,6 +70,7 @@ class SchemaSanitizer
             $entry = [
                 'id' => $this->blockId($block['id'] ?? null),
                 'widget' => $name,
+                'version' => $widget->version(),
                 'settings' => $this->sanitizeSettings($widget, $block['settings'] ?? []),
             ];
 
@@ -190,13 +191,23 @@ class SchemaSanitizer
     /**
      * A select value must be one of the declared options, else its default.
      *
+     * A control whose options are filled in at request time — the collection
+     * picker, say — cannot be checked here: the widget only knows the name
+     * of the source, not what it holds right now. Such a value is kept as
+     * authored; it is a slug, and a slug that no longer resolves renders
+     * nothing rather than anything unsafe.
+     *
      * @param  array<string, mixed>  $control
      */
     private function coerceSelect(array $control, mixed $value): string
     {
-        $options = $control['options'] ?? [];
-
         $value = is_scalar($value) ? (string) $value : '';
+
+        if (($control['dynamic'] ?? null) !== null) {
+            return $value;
+        }
+
+        $options = $control['options'] ?? [];
 
         if (is_array($options) && in_array($value, array_map('strval', array_keys($options)), true)) {
             return $value;
@@ -262,6 +273,11 @@ class SchemaSanitizer
     /**
      * Keep only list rows, each row filtered to its declared sub-fields.
      *
+     * Every row keeps an id of its own. The id is not a control — it never
+     * renders — but it gives the row a stable address, so a translation or
+     * a bookmark can point at one row rather than at a position that moves
+     * the moment the list is reordered.
+     *
      * @param  array<string, mixed>  $control
      * @return array<int, array<string, mixed>>
      */
@@ -293,9 +309,23 @@ class SchemaSanitizer
                     : ($field['default'] ?? null);
             }
 
+            $clean['id'] = $this->rowId($row['id'] ?? null);
+
             $rows[] = $clean;
         }
 
         return $rows;
+    }
+
+    /**
+     * Reuse a client-supplied row id when it is a safe token, else mint one.
+     */
+    private function rowId(mixed $id): string
+    {
+        if (is_string($id) && preg_match('/^[a-z0-9_-]{1,40}$/', $id) === 1) {
+            return $id;
+        }
+
+        return WidgetRegistry::newBlockId();
     }
 }

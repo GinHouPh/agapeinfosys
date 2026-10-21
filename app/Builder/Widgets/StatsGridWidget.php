@@ -11,6 +11,12 @@ class StatsGridWidget extends GenericWidget
     {
         return [
             'name' => 'stats',
+            // Version 2: every repeater row carries an id of its own, so a row can
+            // be addressed on its own rather than by its position.
+            'version' => 2,
+            'migrations' => [
+                1 => ['row_id' => ['stats']],
+            ],
             'title' => 'Stats',
             'category' => 'Content',
             'description' => 'A grid of animated counters with labels — proof points for the business.',

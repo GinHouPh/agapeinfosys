@@ -8,9 +8,10 @@ use App\Builder\WidgetRegistry;
 use App\Http\Controllers\Concerns\HandlesImageUploads;
 use App\Http\Controllers\Controller;
 use App\Models\Page;
+use App\Services\CollectionCatalog;
+use App\Services\MediaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * AJAX surface for the visual page builder.
@@ -61,7 +62,7 @@ class PageBuilderController extends Controller
     /**
      * Return the control schema for one widget (drives the settings panel).
      */
-    public function widgetSchema(Request $request): JsonResponse
+    public function widgetSchema(Request $request, CollectionCatalog $collections): JsonResponse
     {
         $data = $request->validate([
             'widget' => ['required', 'string', 'max:60'],
@@ -73,8 +74,16 @@ class PageBuilderController extends Controller
             return response()->json(['controls' => []], 422);
         }
 
+        $controls = $widget->controls();
+
+        foreach ($controls as $index => $control) {
+            if (($control['dynamic'] ?? null) === 'collections') {
+                $controls[$index]['options'] = $collections->options();
+            }
+        }
+
         return response()->json([
-            'controls' => $widget->controls(),
+            'controls' => $controls,
             'defaults' => $widget->defaults(),
         ]);
     }
@@ -82,17 +91,21 @@ class PageBuilderController extends Controller
     /**
      * Upload an image chosen in a builder image control.
      */
-    public function upload(Request $request): JsonResponse
+    public function upload(Request $request, MediaService $media): JsonResponse
     {
         $data = $request->validate([
             'image' => ['required', 'image', 'max:4096'],
         ]);
 
-        $path = $this->storeUploadedImage($request->file('image'), 'uploads/pages');
+        $item = $media->store(
+            $request->file('image'),
+            'uploads/pages',
+            $request->user()?->getKey(),
+        );
 
         return response()->json([
-            'path' => $path,
-            'url' => $path ? Storage::disk('public')->url($path) : null,
+            'path' => $item->path(),
+            'url' => $item->url(),
         ]);
     }
 }
