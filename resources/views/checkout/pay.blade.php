@@ -87,7 +87,7 @@
 
 @push('head')
     @if ($script)
-        <script src="{{ $script }}" crossorigin="anonymous"></script>
+        <script src="{{ $script }}"></script>
     @endif
 @endpush
 
