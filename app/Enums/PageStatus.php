@@ -11,6 +11,9 @@ enum PageStatus: string
 
     case Published = 'published';
 
+    /** Saved with a future date; the page goes live on its own. */
+    case Scheduled = 'scheduled';
+
     public function isPublished(): bool
     {
         return $this === self::Published;
@@ -21,6 +24,11 @@ enum PageStatus: string
         return $this === self::Draft;
     }
 
+    public function isScheduled(): bool
+    {
+        return $this === self::Scheduled;
+    }
+
     /**
      * Badge class used across the admin tables.
      */
@@ -28,7 +36,7 @@ enum PageStatus: string
     {
         return match ($this) {
             self::Published => 'badge--on',
-            self::Draft => 'badge--off',
+            self::Draft, self::Scheduled => 'badge--off',
         };
     }
 
@@ -40,6 +48,7 @@ enum PageStatus: string
         return match ($this) {
             self::Published => 'Published',
             self::Draft => 'Draft',
+            self::Scheduled => 'Scheduled',
         };
     }
 }

@@ -7,6 +7,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StorePageRequest extends FormRequest
 {
@@ -51,10 +52,32 @@ class StorePageRequest extends FormRequest
                 Rule::unique('pages', 'slug')->ignore($pageId),
             ],
             'status' => ['required', Rule::enum(PageStatus::class)],
+            'scheduled_for' => ['nullable', 'date'],
+            'parent_id' => [
+                'nullable', 'integer',
+                Rule::exists('pages', 'id')->where(fn ($query) => $query->where('id', '!=', $this->route('page')?->id ?? 0)),
+            ],
             'meta_description' => ['nullable', 'string', 'max:300'],
+            'template' => ['nullable', 'integer', Rule::exists('page_templates', 'id')],
             'schema' => ['nullable', 'array'],
             'schema.blocks' => ['nullable', 'array'],
         ];
+    }
+
+    /**
+     * A scheduled page needs a date to go live on.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ($this->input('status') !== PageStatus::Scheduled->value) {
+                return;
+            }
+
+            if (! $this->filled('scheduled_for')) {
+                $validator->errors()->add('scheduled_for', 'Pick the date this page should go live.');
+            }
+        });
     }
 
     /**
@@ -69,6 +92,8 @@ class StorePageRequest extends FormRequest
         if (($validated['slug'] ?? '') === '' || $validated['slug'] === null) {
             $validated['slug'] = Str::slug($validated['title']);
         }
+
+        unset($validated['template']);
 
         return $validated;
     }

@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+{{-- A page may override the design tokens it renders with. The layout
+     reads these and emits them after the theme, so they win. --}}
+@php($pageTokenOverrides = $page->tokenOverrides())
+
 {{-- Record detail templates inherit the record's own browser title; standalone
      and flagship pages fall back to the page's meta title and description. --}}
 @section('title', $pageTitle ?? $page->title)
