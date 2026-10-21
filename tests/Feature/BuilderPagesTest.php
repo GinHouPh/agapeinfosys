@@ -26,7 +26,7 @@ class BuilderPagesTest extends TestCase
             ],
         ]);
 
-        $this->get(route('pages.show', $page))
+        $this->get(route('pages.show', ['page' => $page->path]))
             ->assertOk()
             ->assertSee('Hello')
             ->assertSee('from the builder.')
@@ -37,7 +37,7 @@ class BuilderPagesTest extends TestCase
     {
         $page = Page::factory()->create();
 
-        $this->get(route('pages.show', $page))->assertNotFound();
+        $this->get(route('pages.show', ['page' => $page->path]))->assertNotFound();
     }
 
     public function test_the_home_route_falls_back_to_the_hand_built_view_when_no_builder_page_exists(): void

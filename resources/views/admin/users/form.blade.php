@@ -2,6 +2,8 @@
     $user = $user ?? null;
     $method = $user ? 'PUT' : 'POST';
     $action = $user ? route('admin.users.update', $user) : route('admin.users.store');
+    $roles = $roles ?? collect();
+    $selectedRoles = old('roles', $user?->roles?->pluck('id')->all() ?? []);
 @endphp
 
 <form action="{{ $action }}" method="POST" class="space-y-8">
@@ -54,12 +56,28 @@
                 <label class="flex items-center gap-3 text-body">
                     <input type="hidden" name="is_admin" value="0">
                     <input type="checkbox" name="is_admin" value="1" class="h-4 w-4 accent-[#d90429]" @checked(old('is_admin', $user?->is_admin))>
-                    Administrator
+                    Superuser
                 </label>
                 <p class="text-xs text-muted">
-                    Administrators reach the control panel. Leave unticked for a standard client with the dashboard only.
+                    A superuser bypasses every permission check. Leave unticked for a standard client with the dashboard only.
                 </p>
                 @error('is_admin') <span class="field__error">{{ $message }}</span> @enderror
+
+                <div class="field">
+                    <label class="field__label" for="roles">Roles</label>
+                    <select class="input" id="roles" name="roles[]" multiple size="6">
+                        @foreach ($roles as $role)
+                            <option value="{{ $role->id }}" @selected(in_array($role->id, array_map('intval', (array) $selectedRoles), true))>
+                                {{ $role->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-muted">
+                        Hold Ctrl or Cmd to pick several. A user needs at least one role to reach the control panel.
+                    </p>
+                    @error('roles') <span class="field__error">{{ $message }}</span> @enderror
+                    @error('roles.*') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
             </div>
 
             <div class="flex flex-col gap-3">

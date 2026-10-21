@@ -107,7 +107,25 @@ class AdminPagesTest extends TestCase
             ->get(route('admin.pages.edit', $page))
             ->assertOk()
             ->assertSee('Landing One')
+            ->assertSee('pb-canvas', false)
+            ->assertSee('id="pb-config"', false)
             ->assertSee('pb-canvas', false);
+    }
+
+    public function test_the_canvas_is_handed_its_state_as_json(): void
+    {
+        $page = Page::factory()->create(['title' => 'Landing One']);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.pages.edit', $page));
+
+        $response->assertOk()->assertSee('id="pb-config"', false);
+
+        $html = $response->getContent();
+
+        $this->assertStringContainsString('"palette"', $html);
+        $this->assertStringContainsString('"initialBlocks"', $html);
+        $this->assertStringContainsString('"deviceTiers"', $html);
+        $this->assertStringContainsString('"urls"', $html);
     }
 
     public function test_page_meta_can_be_updated_without_touching_the_schema(): void

@@ -24,6 +24,10 @@ class DatabaseSeeder extends Seeder
             ShowcaseProjectSeeder::class,
             RequirementFormSeeder::class,
             PageSeeder::class,
+            MenuSeeder::class,
+            RoleSeeder::class,
+            DesignThemeSeeder::class,
+            TemplateSeeder::class,
         ]);
     }
 }

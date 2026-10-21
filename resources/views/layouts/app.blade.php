@@ -38,14 +38,65 @@
         })();
     </script>
 
-    <link rel="canonical" href="{{ url()->current() }}">
+    @php
+        $seoTitle = $seoMeta['og_title'] ?? trim(strip_tags($__env->getSection('title', config('app.name'))));
+        $seoDescription = $seoMeta['og_description'] ?? trim(strip_tags($__env->getSection('description', 'Software solutions and IT consultancy.')));
+    @endphp
+
+    <link rel="canonical" href="{{ $seoMeta['canonical_url'] ?? url()->current() }}">
 
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ config('app.name') }}">
-    <meta property="og:title" content="@yield('title', config('app.name'))">
-    <meta property="og:description" content="@yield('description', 'Software solutions and IT consultancy.')">
+    <meta property="og:title" content="{{ $seoTitle }}">
+    <meta property="og:description" content="{{ $seoDescription }}">
+    @if ($seoMeta['og_image'] ?? null)
+        <meta property="og:image" content="{{ $seoMeta['og_image'] }}">
+    @endif
+    @if ($seoMeta['keywords'] ?? null)
+        <meta name="keywords" content="{{ $seoMeta['keywords'] }}">
+    @endif
+
+    <meta name="twitter:card" content="{{ $seoMeta['twitter_card'] ?? 'summary_large_image' }}">
+    <meta name="twitter:title" content="{{ $seoTitle }}">
+    <meta name="twitter:description" content="{{ $seoDescription }}">
+    @if ($seoMeta['og_image'] ?? null)
+        <meta name="twitter:image" content="{{ $seoMeta['og_image'] }}">
+    @endif
+
+    @if ($seoMeta['noindex'] ?? false)
+        <meta name="robots" content="noindex, nofollow">
+    @endif
+
+    @php
+        $languages = app(\App\Services\LocaleService::class)->available();
+        $currentPath = '/'.ltrim(request()->path(), '/');
+    @endphp
+
+    @foreach ($languages as $language)
+        <link rel="alternate" hreflang="{{ $language->code }}"
+              href="{{ app(\App\Services\LocaleService::class)->alternateUrl($language->code, $language->is_default, $currentPath) }}">
+    @endforeach
+
+    @if ($languages->isNotEmpty())
+        <link rel="alternate" hreflang="x-default"
+              href="{{ app(\App\Services\LocaleService::class)->alternateUrl('x-default', true, $currentPath) }}">
+    @endif
+
+    @if (! empty($structuredData))
+        <script type="application/ld+json">{!! json_encode(['@context' => 'https://schema.org', '@graph' => $structuredData], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endif
 
     @fonts
+
+    {{-- The active design theme. Emitted before the stylesheet so it beats
+         the `@theme` output of Tailwind's cascade and repaints every token
+         utility at once. Null when no theme is active — app.css then stands
+         on its own. --}}
+    {!! app(\App\Services\ThemeCompiler::class)->styleTag() !!}
+
+    {{-- The page's own token overrides, emitted after the theme so they win. --}}
+    {!! app(\App\Services\ThemeCompiler::class)->pageTag($pageTokenOverrides ?? []) !!}
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @stack('head')

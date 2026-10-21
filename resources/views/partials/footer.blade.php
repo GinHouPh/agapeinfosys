@@ -7,6 +7,12 @@
     $business = \App\Models\Setting::structured('business', []);
     $brand = $business['brand_name'] ?? 'Agape Infosys';
     $socials = array_filter($business['socials'] ?? []);
+
+    $menus = app(\App\Services\MenuService::class);
+    $footerLinks = $menus->forLocation(\App\Enums\MenuLocation::Footer);
+    $legalLinks = $menus->forLocation(\App\Enums\MenuLocation::Legal);
+    $languages = app(\App\Services\LocaleService::class)->available();
+    $currentLanguage = app(\App\Services\LocaleService::class)->current();
 @endphp
 
 <footer class="border-t border-line bg-ink">
@@ -14,13 +20,9 @@
         <div>
             <h6 class="mb-6 font-display text-sm tracking-[0.24em] text-white uppercase">Pages</h6>
             <ul class="space-y-3 text-body">
-                <li><a href="{{ route('home') }}" class="hover:text-accent">Home</a></li>
-                <li><a href="{{ route('about') }}" class="hover:text-accent">About Us</a></li>
-                <li><a href="{{ route('services.index') }}" class="hover:text-accent">Services</a></li>
-                <li><a href="{{ route('projects.index') }}" class="hover:text-accent">Projects</a></li>
-                <li><a href="{{ route('portfolio.index') }}" class="hover:text-accent">Case Studies</a></li>
-                <li><a href="{{ route('blog.index') }}" class="hover:text-accent">Blog</a></li>
-                <li><a href="{{ route('requirements.create') }}" class="hover:text-accent">Requirement Brief</a></li>
+                @foreach ($footerLinks as $link)
+                    <li><a href="{{ $link['url'] ?? '#' }}" class="hover:text-accent">{{ $link['label'] }}</a></li>
+                @endforeach
                 <li>
                     <a href="{{ route(auth()->check() ? (auth()->user()->isAdmin() ? 'admin.dashboard' : 'dashboard.index') : 'login') }}" class="hover:text-accent">
                         @if (! auth()->check())
@@ -82,14 +84,28 @@
 
     <div class="border-t border-line">
         <div class="shell flex flex-wrap items-center justify-center gap-x-8 gap-y-3 py-5 text-sm text-muted">
-            <a href="{{ route('legal.privacy') }}" class="hover:text-accent">Privacy Policy</a>
-            <a href="{{ route('legal.terms') }}" class="hover:text-accent">Terms &amp; Conditions</a>
-            <a href="{{ route('legal.refunds') }}" class="hover:text-accent">Cancellation &amp; Refunds</a>
-            <a href="{{ route('legal.delivery') }}" class="hover:text-accent">Delivery Policy</a>
+            @foreach ($legalLinks as $link)
+                <a href="{{ $link['url'] ?? '#' }}" class="hover:text-accent">{{ $link['label'] }}</a>
+            @endforeach
         </div>
 
-        <div class="border-t border-line">
-            <div class="shell flex flex-col items-center justify-between gap-4 py-7 sm:flex-row">
+            @if ($languages->count() > 1)
+                <div class="border-t border-line">
+                    <div class="shell flex flex-wrap items-center justify-center gap-x-6 gap-y-3 py-5 text-sm text-muted">
+                        <span class="text-xs tracking-[0.16em] uppercase">Language</span>
+
+                        @foreach ($languages as $language)
+                            <a href="{{ route('locale.choose', $language->code) }}"
+                               class="{{ $currentLanguage?->code === $language->code ? 'text-accent' : 'hover:text-accent' }}">
+                                {{ $language->native_name ?? $language->name }}
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            <div class="border-t border-line">
+                <div class="shell flex flex-col items-center justify-between gap-4 py-7 sm:flex-row">
                 <a href="{{ route('home') }}" class="flex items-center gap-3">
                     <x-brand :show-mark="false" text-class="font-display text-base tracking-[0.22em] text-white uppercase" />
                 </a>

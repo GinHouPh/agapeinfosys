@@ -47,13 +47,16 @@
                     @forelse ($pages as $page)
                         <tr>
                             <td>
-                                <a href="{{ route('admin.pages.edit', $page) }}" class="text-white hover:text-accent">
+                                <a href="{{ $page->adminRoute('admin.pages.edit') }}" class="text-white hover:text-accent">
                                     {{ $page->title }}
                                 </a>
                                 @if ($page->isFlagship())
                                     <span class="tag ml-2">Flagship</span>
                                 @elseif ($page->template() !== null)
                                     <span class="tag ml-2">Template</span>
+                                @endif
+                                @if ($page->parent_id !== null)
+                                    <span class="block text-xs text-muted">Under {{ $page->parent?->title }}</span>
                                 @endif
                             </td>
                             <td>
@@ -72,12 +75,27 @@
                                 <span class="badge {{ $page->status->badgeClass() }}">
                                     {{ $page->status->label() }}
                                 </span>
+                                @if ($page->status->isScheduled() && $page->scheduled_for !== null)
+                                    <span class="block text-xs text-muted">{{ $page->scheduled_for->format('d M Y H:i') }}</span>
+                                @endif
                             </td>
                             <td class="text-muted">{{ $page->updated_at?->diffForHumans() }}</td>
                             <td>
                                 <div class="flex justify-end gap-3">
-                                    <a href="{{ route('admin.pages.edit', $page) }}" class="text-xs tracking-[0.16em] text-accent uppercase">Edit</a>
-                                    <form action="{{ route('admin.pages.destroy', $page) }}" method="POST"
+                                    <a href="{{ $page->adminRoute('admin.pages.edit') }}" class="text-xs tracking-[0.16em] text-accent uppercase">Edit</a>
+                                    <a href="{{ route('admin.seo.edit', ['type' => 'page', 'id' => $page->id]) }}"
+                                       class="text-xs tracking-[0.16em] text-muted uppercase hover:text-accent">SEO</a>
+                                    <a href="{{ $page->adminRoute('admin.pages.revisions') }}"
+                                       class="text-xs tracking-[0.16em] text-muted uppercase hover:text-accent">History</a>
+                                    <a href="{{ $page->adminRoute('admin.pages.design') }}"
+                                       class="text-xs tracking-[0.16em] text-muted uppercase hover:text-accent">Colours</a>
+                                    <form action="{{ $page->adminRoute('admin.pages.duplicate') }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="text-xs tracking-[0.16em] text-muted uppercase hover:text-accent">
+                                            Duplicate
+                                        </button>
+                                    </form>
+                                    <form action="{{ $page->adminRoute('admin.pages.destroy') }}" method="POST"
                                           onsubmit="return confirm('Delete this page?');">
                                         @csrf
                                         @method('DELETE')

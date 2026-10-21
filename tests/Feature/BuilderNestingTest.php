@@ -125,7 +125,7 @@ class BuilderNestingTest extends TestCase
         $this->assertStringContainsString('RightColumn', $html);
         $this->assertLessThan(strpos($html, 'RightColumn'), strpos($html, 'LeftColumn'));
 
-        $this->get(route('pages.show', $page))
+        $this->get(route('pages.show', ['page' => $page->path]))
             ->assertOk()
             ->assertSee('LeftColumn')
             ->assertSee('RightColumn');
@@ -194,7 +194,7 @@ class BuilderNestingTest extends TestCase
             ],
         ]);
 
-        $html = $this->get(route('pages.show', $page))->assertOk()->getContent();
+        $html = $this->get(route('pages.show', ['page' => $page->path]))->assertOk()->getContent();
 
         $this->assertStringContainsString('LiveChild', $html);
         $this->assertStringNotContainsString('data-pb-col', $html);

@@ -1,14 +1,6 @@
 @php
-    $navItems = [
-        'home' => ['label' => 'Home', 'route' => 'home'],
-        'about' => ['label' => 'About', 'route' => 'about'],
-        'services' => ['label' => 'Services', 'route' => 'services.index'],
-        'shop' => ['label' => 'Shop', 'route' => 'shop.index'],
-        'projects' => ['label' => 'Projects', 'route' => 'projects.index'],
-        'portfolio' => ['label' => 'Portfolio', 'route' => 'portfolio.index'],
-        'blog' => ['label' => 'Blog', 'route' => 'blog.index'],
-        'contact' => ['label' => 'Contact', 'route' => 'contact.create'],
-    ];
+    $menus = app(\App\Services\MenuService::class);
+    $navItems = $menus->forLocation(\App\Enums\MenuLocation::Header);
 
     $account = auth()->check()
         ? ['label' => 'Dashboard', 'route' => auth()->user()->isAdmin() ? 'admin.dashboard' : 'dashboard.index']
@@ -20,12 +12,14 @@
 <header data-site-header class="site-header">
     <div class="site-header__bar">
         <nav class="hidden items-center gap-2 xl:flex" aria-label="Primary">
-            @foreach ($navItems as $key => $item)
+            @foreach ($navItems as $item)
                 <a
-                    href="{{ route($item['route']) }}"
-                    class="nav-item {{ request()->routeIs($item['route']) ? 'is-active' : '' }}"
+                    href="{{ $item['url'] ?? '#' }}"
+                    class="nav-item {{ $menus->isActive($item) ? 'is-active' : '' }}"
                 >
-                    <x-nav-icon :name="$key" />
+                    @if ($item['icon'])
+                        <x-nav-icon :name="$item['icon']" />
+                    @endif
                     <span class="nav-item__label">{{ $item['label'] }}</span>
                 </a>
             @endforeach
@@ -100,10 +94,10 @@
         data-nav-panel
         class="nav-panel"
     >
-        @foreach ($navItems as $key => $item)
+        @foreach ($navItems as $item)
             <a
-                href="{{ route($item['route']) }}"
-                class="border-b border-line py-4 font-display text-2xl tracking-[0.1em] text-white capitalize {{ request()->routeIs($item['route']) ? 'text-accent' : '' }}"
+                href="{{ $item['url'] ?? '#' }}"
+                class="border-b border-line py-4 font-display text-2xl tracking-[0.1em] text-white capitalize {{ $menus->isActive($item) ? 'text-accent' : '' }}"
             >
                 {{ $item['label'] }}
             </a>
