@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\GeneratesSlug;
+use App\Models\Concerns\HasSeoMeta;
+use App\Models\Concerns\HasTranslations;
 use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 class Service extends Model
 {
     /** @use HasFactory<ServiceFactory> */
-    use GeneratesSlug, HasFactory;
+    use GeneratesSlug, HasFactory, HasSeoMeta, HasTranslations;
 
     protected $fillable = [
         'title',

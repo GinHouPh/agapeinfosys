@@ -57,6 +57,8 @@
                             <td>
                                 <div class="flex justify-end gap-3">
                                     <a href="{{ route('admin.posts.edit', $post) }}" class="text-xs tracking-[0.16em] text-accent uppercase">Edit</a>
+                                    <a href="{{ route('admin.seo.edit', ['type' => 'post', 'id' => $post->id]) }}"
+                                       class="text-xs tracking-[0.16em] text-muted uppercase hover:text-accent">SEO</a>
                                     <form action="{{ route('admin.posts.destroy', $post) }}" method="POST"
                                           onsubmit="return confirm('Delete this article?');">
                                         @csrf

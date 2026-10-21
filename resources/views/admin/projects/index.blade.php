@@ -55,6 +55,8 @@
                             <td>
                                 <div class="flex justify-end gap-3">
                                     <a href="{{ route('admin.projects.edit', $project) }}" class="text-xs tracking-[0.16em] text-accent uppercase">Edit</a>
+                                    <a href="{{ route('admin.seo.edit', ['type' => 'project', 'id' => $project->id]) }}"
+                                       class="text-xs tracking-[0.16em] text-muted uppercase hover:text-accent">SEO</a>
                                     <form action="{{ route('admin.projects.destroy', $project) }}" method="POST"
                                           onsubmit="return confirm('Delete this case study?');">
                                         @csrf

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\GeneratesSlug;
+use App\Models\Concerns\HasSeoMeta;
+use App\Models\Concerns\HasTranslations;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
-    use GeneratesSlug, HasFactory;
+    use GeneratesSlug, HasFactory, HasSeoMeta, HasTranslations;
 
     protected $fillable = [
         'title',

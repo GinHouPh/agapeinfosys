@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\GeneratesSlug;
+use App\Models\Concerns\HasSeoMeta;
+use App\Models\Concerns\HasTranslations;
 use Database\Factories\PostFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Post extends Model
 {
     /** @use HasFactory<PostFactory> */
-    use GeneratesSlug, HasFactory;
+    use GeneratesSlug, HasFactory, HasSeoMeta, HasTranslations;
 
     protected $fillable = [
         'author_id',
