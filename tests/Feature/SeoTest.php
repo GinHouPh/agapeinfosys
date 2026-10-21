@@ -37,6 +37,26 @@ class SeoTest extends TestCase
             ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
             ->assertSee('<urlset', false)
             ->assertSee($page->targetUrl(), false);
+
+        // The declaration has to be the very first thing in the body. A
+        // literal "<?xml" in the template is a PHP open tag on a server
+        // with short_open_tag on, which would turn the whole file into a
+        // parse error — and the same broken template leaves the stray
+        // "@php" in front of the body here.
+        $this->assertStringStartsWith('<?xml version="1.0"', $response->getContent());
+    }
+
+    public function test_the_news_sitemap_is_served_as_xml(): void
+    {
+        Post::factory()->create(['is_published' => true]);
+
+        $response = $this->get(route('sitemap.news'));
+
+        $response->assertOk()
+            ->assertSee('news:news', false)
+            ->assertSee('news:publication', false);
+
+        $this->assertStringStartsWith('<?xml version="1.0"', $response->getContent());
     }
 
     public function test_the_sitemap_leaves_out_draft_pages(): void

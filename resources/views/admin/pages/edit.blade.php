@@ -309,6 +309,6 @@
 
 {{-- The canvas reads its whole state from this JSON, so the script itself
      is a plain module with no Blade in it. --}}
-<script type="application/json" id="pb-config">{!! json_encode($builderConfig) !!}</script>
+<script type="application/json" id="pb-config">{!! json_encode($builderConfig, JSON_HEX_TAG) !!}</script>
 @vite('resources/js/builder/canvas.js')
 @endpush

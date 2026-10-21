@@ -83,7 +83,9 @@
     @endif
 
     @if (! empty($structuredData))
-        <script type="application/ld+json">{!! json_encode(['@context' => 'https://schema.org', '@graph' => $structuredData], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+        {{-- JSON_HEX_TAG escapes < and >, so a title carrying "</script>"
+             cannot break out of the tag it sits in. --}}
+        <script type="application/ld+json">{!! json_encode(['@context' => 'https://schema.org', '@graph' => $structuredData], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
     @endif
 
     @fonts
