@@ -23,6 +23,8 @@ class Form extends Model
         'description',
         'submit_label',
         'success_message',
+        'notification_settings',
+        'throttle_per_minute',
         'reference_prefix',
         'is_active',
     ];
@@ -33,8 +35,39 @@ class Form extends Model
     protected function casts(): array
     {
         return [
+            'notification_settings' => 'array',
+            'throttle_per_minute' => 'integer',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * The address new submissions are announced to, if any.
+     */
+    public function notificationEmail(): ?string
+    {
+        $settings = $this->notification_settings ?? [];
+
+        if (! is_array($settings) || ($settings['notify'] ?? false) !== true) {
+            return null;
+        }
+
+        $email = $settings['email'] ?? null;
+
+        return is_string($email) && $email !== '' ? $email : null;
+    }
+
+    /**
+     * The subject a new submission is announced with.
+     */
+    public function notificationSubject(): string
+    {
+        $settings = $this->notification_settings ?? [];
+        $subject = is_array($settings) ? ($settings['subject'] ?? null) : null;
+
+        return is_string($subject) && $subject !== ''
+            ? str_replace('{form}', $this->title, $subject)
+            : 'New '.$this->title.' submission';
     }
 
     public function fields(): HasMany

@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\SubmissionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Form;
+use App\Models\FormField;
 use App\Models\FormSubmission;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FormSubmissionController extends Controller
 {
@@ -73,5 +76,48 @@ class FormSubmissionController extends Controller
         return redirect()
             ->route('admin.submissions.index')
             ->with('status', 'Submission deleted.');
+    }
+
+    /**
+     * Download the submissions of one form as a CSV.
+     */
+    public function export(Request $request): StreamedResponse
+    {
+        $formId = (int) $request->query('form', 0);
+
+        $form = Form::query()->with('fields')->findOrFail($formId);
+
+        $submissions = FormSubmission::query()
+            ->where('form_id', $form->id)
+            ->oldest('id')
+            ->get();
+
+        $columns = $form->fields->map(fn (FormField $field): string => $field->label)->all();
+
+        $filename = Str::slug($form->title).'-submissions.csv';
+
+        return response()->streamDownload(function () use ($submissions, $columns, $form): void {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, ['Reference', 'Status', 'Received', ...$columns]);
+
+            foreach ($submissions as $submission) {
+                $row = [
+                    $submission->reference,
+                    $submission->status->value,
+                    $submission->created_at?->toDateTimeString(),
+                ];
+
+                foreach ($form->fields as $field) {
+                    $row[] = $submission->answerFor($field);
+                }
+
+                fputcsv($handle, $row);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 }

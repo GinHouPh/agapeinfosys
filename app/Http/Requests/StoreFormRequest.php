@@ -34,6 +34,9 @@ class StoreFormRequest extends FormRequest
             'submit_label' => ['required', 'string', 'max:80'],
             'success_message' => ['nullable', 'string', 'max:400'],
             'reference_prefix' => ['required', 'string', 'max:10', 'regex:/^[A-Za-z0-9-]+$/'],
+            'notify_email' => ['nullable', 'email', 'max:190'],
+            'notify_subject' => ['nullable', 'string', 'max:180'],
+            'throttle_per_minute' => ['nullable', 'integer', 'min:1', 'max:120'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }
@@ -56,6 +59,33 @@ class StoreFormRequest extends FormRequest
             $this->route('form')?->is_active ?? true,
         );
 
+        $validated['notification_settings'] = $this->notificationSettings($validated);
+
+        $validated['throttle_per_minute'] = (int) ($validated['throttle_per_minute'] ?? 6);
+
+        unset($validated['notify_email'], $validated['notify_subject']);
+
         return $validated;
+    }
+
+    /**
+     * Build the notification settings from the flat inputs.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>|null
+     */
+    private function notificationSettings(array $validated): ?array
+    {
+        $email = $validated['notify_email'] ?? null;
+
+        if (! is_string($email) || $email === '') {
+            return null;
+        }
+
+        return [
+            'notify' => true,
+            'email' => $email,
+            'subject' => $validated['notify_subject'] ?? '',
+        ];
     }
 }

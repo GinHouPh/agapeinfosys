@@ -70,6 +70,34 @@
         @error('success_message') <span class="field__error">{{ $message }}</span> @enderror
     </div>
 
+    <div class="grid gap-6 sm:grid-cols-3">
+        <div class="field">
+            <label class="field__label" for="notify_email">Notify by email</label>
+            <input class="input" type="email" id="notify_email" name="notify_email"
+                   value="{{ old('notify_email', $form->notification_settings['email'] ?? '') }}"
+                   placeholder="leads@example.com">
+            <p class="text-xs text-muted">Each new submission is announced here.</p>
+            @error('notify_email') <span class="field__error">{{ $message }}</span> @enderror
+        </div>
+
+        <div class="field">
+            <label class="field__label" for="notify_subject">Notification subject</label>
+            <input class="input" type="text" id="notify_subject" name="notify_subject"
+                   value="{{ old('notify_subject', $form->notification_settings['subject'] ?? '') }}"
+                   placeholder="New {form} submission">
+            <p class="text-xs text-muted">{form} becomes the form's title.</p>
+            @error('notify_subject') <span class="field__error">{{ $message }}</span> @enderror
+        </div>
+
+        <div class="field">
+            <label class="field__label" for="throttle_per_minute">Submissions per minute</label>
+            <input class="input" type="number" id="throttle_per_minute" name="throttle_per_minute" min="1" max="120"
+                   value="{{ old('throttle_per_minute', $form->throttle_per_minute ?? 6) }}">
+            <p class="text-xs text-muted">Per visitor, per form.</p>
+            @error('throttle_per_minute') <span class="field__error">{{ $message }}</span> @enderror
+        </div>
+    </div>
+
     <div class="flex flex-wrap items-center gap-4 border-t border-line pt-6">
         <button type="submit" class="btn btn--accent">
             {{ $isEdit ? 'Save Details' : 'Create Form' }}

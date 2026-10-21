@@ -32,8 +32,14 @@
                 : route('forms.store', $form);
         @endphp
 
-        <form action="{{ $action }}" method="POST" class="space-y-12" novalidate>
+        <form action="{{ $action }}" method="POST" class="space-y-12" novalidate enctype="multipart/form-data">
             @csrf
+
+            {{-- A bot fills this in; a person never sees it. --}}
+            <div class="hidden" aria-hidden="true">
+                <label for="{{ $honeypot ?? 'hp' }}">Leave this field empty</label>
+                <input type="text" id="{{ $honeypot ?? 'hp' }}" name="{{ $honeypot ?? 'hp' }}" tabindex="-1" autocomplete="off">
+            </div>
 
             @php $section = 0; @endphp
 
@@ -70,3 +76,61 @@
         </form>
     @endif
 </div>
+
+@if ($honeypot ?? null)
+    <script>
+        // Conditional fields: a field with a condition stays out of the way
+        // until the answers it depends on say it should be there.
+        (function () {
+            'use strict';
+
+            function readValue(name) {
+                var field = document.querySelector('[name="answers[' + name + ']"]');
+                if (!field) return '';
+
+                if (field.type === 'checkbox') {
+                    var checked = document.querySelectorAll('[name="answers[' + name + '][]"]:checked');
+                    return Array.prototype.map.call(checked, function (el) { return el.value; }).join(', ');
+                }
+
+                return field.value || '';
+            }
+
+            function matches(rule) {
+                var actual = readValue(rule.field);
+                var expected = rule.value === undefined || rule.value === null ? '' : String(rule.value);
+
+                switch (rule.operator) {
+                    case 'not_equals': return actual !== expected;
+                    case 'contains': return actual !== '' && actual.indexOf(expected) !== -1;
+                    case 'not_contains': return actual.indexOf(expected) === -1;
+                    case 'is_filled': return actual !== '';
+                    case 'is_empty': return actual === '';
+                    default: return actual === expected;
+                }
+            }
+
+            function apply() {
+                document.querySelectorAll('[data-condition]').forEach(function (el) {
+                    var rules;
+                    try {
+                        rules = JSON.parse(el.getAttribute('data-condition'));
+                    } catch (e) {
+                        return;
+                    }
+
+                    var show = (rules || []).every(matches);
+                    el.classList.toggle('hidden', !show);
+
+                    el.querySelectorAll('input, select, textarea').forEach(function (input) {
+                        input.disabled = !show;
+                    });
+                });
+            }
+
+            document.addEventListener('input', apply);
+            document.addEventListener('change', apply);
+            apply();
+        })();
+    </script>
+@endif

@@ -31,7 +31,15 @@
             <button type="submit" class="tag shrink-0 hover:border-accent hover:text-accent">Filter</button>
         </form>
 
-        <a href="{{ route('admin.forms.index') }}" class="tag hover:border-accent hover:text-accent">Manage Forms</a>
+        <div class="flex flex-wrap items-center gap-3">
+            @if ($formId > 0)
+                <a href="{{ route('admin.submissions.export', ['form' => $formId]) }}" class="tag hover:border-accent hover:text-accent">
+                    Export CSV
+                </a>
+            @endif
+
+            <a href="{{ route('admin.forms.index') }}" class="tag hover:border-accent hover:text-accent">Manage Forms</a>
+        </div>
     </div>
 
     <div class="admin-card !p-0">

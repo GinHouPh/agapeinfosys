@@ -88,6 +88,69 @@
                             </div>
 
                             <div class="field">
+                                <label class="field__label" for="width-{{ $field->id }}">Width</label>
+                                <select class="input" id="width-{{ $field->id }}" name="width">
+                                    <option value="full" @selected(old('width', $field->width) === 'full')>Full row</option>
+                                    <option value="half" @selected(old('width', $field->width) === 'half')>Half row</option>
+                                </select>
+                                @error('width') <span class="field__error">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="field">
+                                <label class="field__label" for="validation-{{ $field->id }}">Extra rules</label>
+                                <input class="input" type="text" id="validation-{{ $field->id }}" name="validation"
+                                       value="{{ old('validation', implode(', ', $field->validationRules())) }}"
+                                       placeholder="min:3, max:120">
+                                <p class="text-xs text-muted">Laravel rules, comma separated.</p>
+                                @error('validation') <span class="field__error">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="field">
+                                <span class="field__label">Show this question only when</span>
+                                <div class="grid gap-3 sm:grid-cols-3">
+                                    <select class="input" id="condition_field-{{ $field->id }}" name="condition_field">
+                                        <option value="">Always</option>
+                                        @foreach ($form->fields as $candidate)
+                                            @continue($candidate->id === $field->id)
+                                            <option value="{{ $candidate->name }}"
+                                                @selected(old('condition_field', $field->condition[0]['field'] ?? null) === $candidate->name)>
+                                                {{ $candidate->label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+
+                                    <select class="input" id="condition_operator-{{ $field->id }}" name="condition_operator">
+                                        @foreach (['equals', 'not_equals', 'contains', 'not_contains', 'is_filled', 'is_empty'] as $operator)
+                                            <option value="{{ $operator }}"
+                                                @selected(old('condition_operator', $field->condition[0]['operator'] ?? null) === $operator)>
+                                                {{ str_replace('_', ' ', $operator) }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+
+                                    <input class="input" type="text" id="condition_value-{{ $field->id }}" name="condition_value"
+                                           value="{{ old('condition_value', $field->condition[0]['value'] ?? '') }}"
+                                           placeholder="value">
+                                </div>
+                                @error('condition_field') <span class="field__error">{{ $message }}</span> @enderror
+                            </div>
+
+                            @if ($field->type->isFile())
+                                <div class="field sm:col-span-2">
+                                    <span class="field__label">Uploads</span>
+                                    <div class="grid gap-3 sm:grid-cols-2">
+                                        <input class="input" type="text" id="file_mimes-{{ $field->id }}" name="file_mimes"
+                                               value="{{ old('file_mimes', implode(', ', $field->acceptedMimes())) }}"
+                                               placeholder="pdf, doc, docx">
+                                        <input class="input" type="number" id="file_max_kilobytes-{{ $field->id }}" name="file_max_kilobytes"
+                                               value="{{ old('file_max_kilobytes', $field->maxUploadKilobytes()) }}" min="1" max="204800">
+                                    </div>
+                                    <p class="text-xs text-muted">Accepted types, comma separated, and the size limit in kilobytes.</p>
+                                    @error('file_mimes') <span class="field__error">{{ $message }}</span> @enderror
+                                </div>
+                            @endif
+
+                            <div class="field">
                                 <span class="field__label">Required</span>
                                 <label class="flex cursor-pointer items-center gap-3 border border-line p-3 transition-colors duration-300 hover:border-accent has-[:checked]:border-accent">
                                     <input type="checkbox" name="is_required" value="1" class="h-4 w-4 accent-accent"

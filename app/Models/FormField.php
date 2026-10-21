@@ -27,6 +27,10 @@ class FormField extends Model
         'options',
         'placeholder',
         'help_text',
+        'validation',
+        'condition',
+        'width',
+        'file_settings',
         'is_required',
         'sort_order',
     ];
@@ -39,9 +43,50 @@ class FormField extends Model
         return [
             'type' => FormFieldType::class,
             'options' => 'array',
+            'validation' => 'array',
+            'condition' => 'array',
+            'file_settings' => 'array',
             'is_required' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    /**
+     * The extra validation rules the author set on this field.
+     *
+     * @return array<int, string>
+     */
+    public function validationRules(): array
+    {
+        $rules = $this->validation ?? [];
+
+        if (! is_array($rules)) {
+            return [];
+        }
+
+        return array_values(array_filter($rules, 'is_string'));
+    }
+
+    /**
+     * The file types this field accepts.
+     *
+     * @return list<string>
+     */
+    public function acceptedMimes(): array
+    {
+        $mimes = $this->file_settings['mimes'] ?? [];
+
+        return is_array($mimes) ? array_values(array_filter($mimes, 'is_string')) : [];
+    }
+
+    /**
+     * The largest upload this field accepts, in kilobytes.
+     */
+    public function maxUploadKilobytes(): int
+    {
+        $max = $this->file_settings['max_kilobytes'] ?? 5120;
+
+        return is_numeric($max) ? (int) $max : 5120;
     }
 
     public function form(): BelongsTo

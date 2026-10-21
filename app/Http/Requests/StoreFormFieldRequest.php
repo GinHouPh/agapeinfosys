@@ -41,6 +41,13 @@ class StoreFormFieldRequest extends FormRequest
             'options' => ['nullable', 'string', 'max:4000'],
             'placeholder' => ['nullable', 'string', 'max:190'],
             'help_text' => ['nullable', 'string', 'max:240'],
+            'width' => ['nullable', Rule::in(['full', 'half'])],
+            'validation' => ['nullable', 'string', 'max:400'],
+            'condition_field' => ['nullable', 'string', 'max:100'],
+            'condition_operator' => ['nullable', Rule::in(['equals', 'not_equals', 'contains', 'not_contains', 'is_filled', 'is_empty'])],
+            'condition_value' => ['nullable', 'string', 'max:190'],
+            'file_mimes' => ['nullable', 'string', 'max:400'],
+            'file_max_kilobytes' => ['nullable', 'integer', 'min:1', 'max:204800'],
             'is_required' => ['sometimes', 'boolean'],
         ];
     }
@@ -83,7 +90,85 @@ class StoreFormFieldRequest extends FormRequest
             $this->route('field')?->is_required ?? false,
         );
 
+        $validated['width'] = $validated['width'] ?? 'full';
+
+        $validated['validation'] = $this->splitRules($validated['validation'] ?? null);
+
+        $validated['condition'] = $this->buildCondition($validated);
+
+        $validated['file_settings'] = $this->buildFileSettings($validated, $type);
+
+        unset(
+            $validated['condition_field'],
+            $validated['condition_operator'],
+            $validated['condition_value'],
+            $validated['file_mimes'],
+            $validated['file_max_kilobytes'],
+        );
+
         return $validated;
+    }
+
+    /**
+     * Split the extra rules textarea, one rule per line.
+     *
+     * @return array<int, string>
+     */
+    private function splitRules(?string $rules): array
+    {
+        if ($rules === null || trim($rules) === '') {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map('trim', preg_split('/\R/', $rules)),
+            fn (string $rule): bool => $rule !== '',
+        ));
+    }
+
+    /**
+     * Build the condition from the three flat inputs.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildCondition(array $validated): array
+    {
+        $field = $validated['condition_field'] ?? null;
+        $operator = $validated['condition_operator'] ?? null;
+
+        if (! is_string($field) || $field === '' || ! is_string($operator) || $operator === '') {
+            return [];
+        }
+
+        return [[
+            'field' => $field,
+            'operator' => $operator,
+            'value' => $validated['condition_value'] ?? '',
+        ]];
+    }
+
+    /**
+     * Build the upload rules for a file field.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>|null
+     */
+    private function buildFileSettings(array $validated, FormFieldType $type): ?array
+    {
+        if (! $type->isFile()) {
+            return null;
+        }
+
+        $mimes = array_values(array_filter(
+            array_map('trim', explode(',', (string) ($validated['file_mimes'] ?? ''))),
+            fn (string $mime): bool => $mime !== '',
+        ));
+
+        return [
+            'mimes' => $mimes,
+            'max_kilobytes' => (int) ($validated['file_max_kilobytes'] ?? 5120),
+        ];
     }
 
     /**

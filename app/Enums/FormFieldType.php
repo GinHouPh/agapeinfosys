@@ -25,6 +25,8 @@ enum FormFieldType: string
 
     case Date = 'date';
 
+    case File = 'file';
+
     /**
      * Field types that render a list of predefined options.
      */
@@ -42,6 +44,14 @@ enum FormFieldType: string
     }
 
     /**
+     * Whether the field carries an uploaded file rather than a typed answer.
+     */
+    public function isFile(): bool
+    {
+        return $this === self::File;
+    }
+
+    /**
      * Native HTML input type, or null for types rendered differently.
      */
     public function inputType(): ?string
@@ -52,6 +62,7 @@ enum FormFieldType: string
             self::Phone => 'tel',
             self::Number => 'number',
             self::Date => 'date',
+            self::File => 'file',
             default => null,
         };
     }
@@ -71,6 +82,7 @@ enum FormFieldType: string
             self::Radio => 'Single choice',
             self::Checkbox => 'Multiple choice',
             self::Date => 'Date',
+            self::File => 'File upload',
         };
     }
 }

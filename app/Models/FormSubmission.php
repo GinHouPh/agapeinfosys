@@ -21,6 +21,9 @@ class FormSubmission extends Model
         'form_id',
         'reference',
         'answers',
+        'meta',
+        'page_url',
+        'is_spam',
         'status',
     ];
 
@@ -31,6 +34,8 @@ class FormSubmission extends Model
     {
         return [
             'answers' => 'array',
+            'meta' => 'array',
+            'is_spam' => 'boolean',
             'status' => SubmissionStatus::class,
         ];
     }
