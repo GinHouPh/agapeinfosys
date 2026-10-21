@@ -1,4 +1,4 @@
-## Deployment log — 	ongdon.com / gapeinfosys.com
+## Deployment log ï¿½ 	ongdon.com / gapeinfosys.com
 
 Concrete values for this deployment.
 
@@ -10,8 +10,8 @@ Concrete values for this deployment.
 | SSH login | 	ongdon.com@ssh.gb.stackcp.com (key-based) |
 | Local private key | C:\Users\Jace\AppData\Local\Temp\opencode\agapeinfosys_key |
 | PHP CLI | php83 ? /usr/bin/php83 (PHP 8.3.35 NTS) |
-| Composer | /usr/bin/composer (run as php83 /usr/bin/composer …) |
-| Node/npm | **not available** — build assets locally |
+| Composer | /usr/bin/composer (run as php83 /usr/bin/composer ï¿½) |
+| Node/npm | **not available** ï¿½ build assets locally |
 | MySQL host | sdb-90.hosting.stackcp.net |
 | MySQL user | giginhaokip (with grants on gapeinfosys-353131396a2a) |
 | Database | gapeinfosys-353131396a2a |
@@ -417,6 +417,7 @@ make sure `APP_URL` uses `https://` â€” uploaded-media URLs are built from it
 | Uploaded images 404 | Run `php83 artisan storage:link`; check `APP_URL` scheme |
 | Webhooks never delivered | Cron queue worker not set up, or product has no `callback_url` |
 | Blank page after deploy | Run `bash deploy.sh` (caches may point at old files) |
+| A view 500s with `unexpected identifier` | The server has `short_open_tag=On`, so a literal `<?` in a Blade view is a PHP open tag. Keep XML and other markup with a bare `<?` out of views â€” build it in PHP (`App\Support\Xml`) â€” and run the suite with `php -d short_open_tag=1 artisan test` before deploying |
 
 ---
 
