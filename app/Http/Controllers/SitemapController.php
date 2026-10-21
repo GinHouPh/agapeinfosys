@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Services\SeoService;
+use App\Support\Xml;
 use Illuminate\Http\Response;
 
 /**
@@ -16,9 +17,7 @@ class SitemapController extends Controller
      */
     public function index(SeoService $seo): Response
     {
-        $entries = $seo->sitemapEntries();
-
-        $xml = view('sitemap', ['entries' => $entries])->render();
+        $xml = Xml::urlset($seo->sitemapEntries());
 
         return response($xml, 200, [
             'Content-Type' => 'application/xml; charset=UTF-8',
@@ -47,7 +46,7 @@ class SitemapController extends Controller
             ];
         }
 
-        return response()->view('sitemap-news', ['entries' => $entries], 200, [
+        return response(Xml::news($entries), 200, [
             'Content-Type' => 'application/xml; charset=UTF-8',
         ]);
     }
