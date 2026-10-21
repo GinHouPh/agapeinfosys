@@ -17,7 +17,7 @@ class LoginController extends Controller
     {
         $user = Auth::user();
 
-        if ($user !== null && $user->isAdmin()) {
+        if ($user !== null && ($user->isAdmin() || $user->hasAnyPermission())) {
             return redirect()->route('admin.dashboard');
         }
 
@@ -30,6 +30,9 @@ class LoginController extends Controller
 
     /**
      * Authenticate an administrator.
+     *
+     * Superusers sign in with their credentials alone. Everyone else also
+     * needs a role granting at least one permission.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -40,10 +43,20 @@ class LoginController extends Controller
 
         $remember = $request->boolean('remember');
 
-        if (! Auth::attempt($credentials + ['is_admin' => true], $remember)) {
+        if (! Auth::attempt($credentials, $remember)) {
             return back()
                 ->withInput($request->only('email', 'remember'))
                 ->withErrors(['email' => 'Those credentials do not match an administrator account.']);
+        }
+
+        $user = Auth::user();
+
+        if (! $user->isAdmin() && ! $user->hasAnyPermission()) {
+            Auth::logout();
+
+            return back()
+                ->withInput($request->only('email', 'remember'))
+                ->withErrors(['email' => 'That account has no control panel access.']);
         }
 
         $request->session()->regenerate();

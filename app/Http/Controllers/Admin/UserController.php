@@ -7,6 +7,7 @@ use App\Enums\SubscriptionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -77,7 +78,7 @@ class UserController extends Controller
      */
     public function create(): View
     {
-        return view('admin.users.create');
+        return view('admin.users.create', ['roles' => Role::query()->orderBy('name')->get()]);
     }
 
     /**
@@ -85,9 +86,11 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request): RedirectResponse
     {
-        User::create($request->safe()->except('is_admin') + [
+        $user = User::create($request->safe()->except(['is_admin', 'roles']) + [
             'is_admin' => $request->boolean('is_admin'),
         ]);
+
+        $user->roles()->sync($request->input('roles', []));
 
         return redirect()
             ->route('admin.users.index')
@@ -99,7 +102,12 @@ class UserController extends Controller
      */
     public function edit(User $user): View
     {
-        return view('admin.users.edit', compact('user'));
+        $user->load('roles');
+
+        return view('admin.users.edit', [
+            'user' => $user,
+            'roles' => Role::query()->orderBy('name')->get(),
+        ]);
     }
 
     /**
@@ -113,7 +121,7 @@ class UserController extends Controller
                 ->withErrors(['is_admin' => 'You cannot remove your own administrator access.']);
         }
 
-        $attributes = $request->safe()->except(['password', 'is_admin'])
+        $attributes = $request->safe()->except(['password', 'is_admin', 'roles'])
             + ['is_admin' => $request->boolean('is_admin')];
 
         if ($request->filled('password')) {
@@ -121,6 +129,8 @@ class UserController extends Controller
         }
 
         $user->update($attributes);
+
+        $user->roles()->sync($request->input('roles', []));
 
         return redirect()
             ->route('admin.users.index')

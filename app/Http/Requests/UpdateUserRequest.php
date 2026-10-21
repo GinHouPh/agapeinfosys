@@ -35,6 +35,8 @@ class UpdateUserRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:30'],
             'password' => ['nullable', 'string', 'confirmed', Password::defaults()],
             'is_admin' => ['boolean'],
+            'roles' => ['nullable', 'array'],
+            'roles.*' => ['integer', Rule::exists('roles', 'id')],
         ];
     }
 
