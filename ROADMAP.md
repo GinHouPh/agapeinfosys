@@ -649,6 +649,10 @@ Tests: `RepeaterTranslationTest`, `WidgetVersioningTest`,
   cron entry is in place — so a page saved with a future date will not go
   live on its own.
 - Backups of the database and `storage/app/public` are not automated.
+- **`tongdon.com` does not resolve.** It is the `callback_url` on the
+  products, so every outbound entitlement webhook fails with
+  `cURL error 6: Could not resolve host`. Point DNS at the package, or
+  change the callback URL to a host that resolves.
 
 **Housekeeping / correctness**
 - Rebrand defaults: `.env.example` `APP_NAME=Laravel` → `Agape Infosys`;
