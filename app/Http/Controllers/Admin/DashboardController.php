@@ -9,16 +9,25 @@ use App\Models\Project;
 use App\Models\Service;
 use App\Models\Testimonial;
 use App\Models\User;
+use App\Services\DashboardService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     /**
-     * Control panel landing view with content health at a glance.
+     * Control panel landing view: the headline numbers, the revenue over
+     * time, and the content health at a glance.
      */
-    public function index(): View
+    public function index(Request $request, DashboardService $dashboard): View
     {
+        [$from, $to, $preset] = $dashboard->range($request->query('range'));
+
+        $report = $dashboard->report($from, $to);
+
         return view('admin.dashboard', [
+            'report' => $report,
+            'preset' => $preset,
             'counts' => [
                 ['label' => 'Services', 'value' => Service::query()->count(), 'route' => 'admin.services.index'],
                 ['label' => 'Case studies', 'value' => Project::query()->count(), 'route' => 'admin.projects.index'],

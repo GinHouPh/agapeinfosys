@@ -71,7 +71,14 @@ class WidgetLibraryTest extends TestCase
                     "Widget [{$name}] control [{$control['key']}] has an unknown type.");
 
                 if ($control['type'] === 'select') {
-                    $this->assertNotEmpty($control['options'] ?? [], "Widget [{$name}] control [{$control['key']}] needs options.");
+                    // A control whose options are filled in at request time
+                    // cannot declare them here; it must say where they come
+                    // from instead.
+                    if (isset($control['dynamic'])) {
+                        $this->assertNotEmpty($control['dynamic'], "Widget [{$name}] control [{$control['key']}] declares a dynamic source without naming one.");
+                    } else {
+                        $this->assertNotEmpty($control['options'] ?? [], "Widget [{$name}] control [{$control['key']}] needs options.");
+                    }
                 }
 
                 // A per-device override is stored beside the base key and
