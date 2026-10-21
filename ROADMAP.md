@@ -66,10 +66,9 @@ the current planning cycle.
 | --- | --- | --- | --- | --- | --- |
 | 1 | Platform Administration | Manage the entire CMS platform | P0 | ✅ Shipped | ✅ Phase 5 landed — health console, feature flags, maintenance mode, audit trail. Still missing: backups and log rotation |
 | 2 | Dashboard & Reporting | Operational analytics and KPIs | P0 | ✅ Shipped | ✅ Phases 9 and 13 landed — dated KPIs, revenue series, top plans/products, CSV export, and a traffic report |
-| 3 | Visual Website Builder | Drag-and-drop website design | P0 | ✅ Shipped | ✅ Phase 4 landed — saved components, media picker. Still missing: A/B testing |
-| 3 | Visual Website Builder | Drag-and-drop website design | P0 | ✅ Shipped | ✅ Phase 4 landed — saved components, media picker. Still missing: A/B testing |
+| 3 | Visual Website Builder | Drag-and-drop website design | P0 | ✅ Shipped | ✅ Phases 4 and 13 landed — saved components, media picker, widget versioning. Still missing: A/B testing |
 | 4 | Page & Layout Management | Create and organize website pages | P0 | ✅ Shipped | ✅ Phase 8 landed — hierarchy, revisions, scheduled publish, duplication, per-page colours |
-| 5 | Design System | Manage themes, styles, fonts, and colors | P0 | ✅ Shipped | ✅ Phase 3 landed — editable tokens, fonts, radii, shadows, live theme switching. Still missing: per-page token overrides |
+| 5 | Design System | Manage themes, styles, fonts, and colors | P0 | ✅ Shipped | ✅ Phases 3 and 13 landed — editable tokens, fonts, radii, shadows, live theme switching, per-page overrides |
 | 6 | Media & Asset Library | Upload, organise and reuse media | P0 | ✅ Shipped | ✅ Phases 10 and 13 landed — library, gallery, alt-text, focal point, and the in-builder picker |
 | 7 | Content Collections & Modelling | Define custom content types | P1 | ✅ Shipped | ✅ Phases 11 and 13 landed — types, fields, records, public rendering, and a collection widget |
 | 8 | Localization & Multi-language | Serve the site in more than one locale | P1 | ✅ Shipped | ✅ Phases 12 and 13 landed — languages, translations, per-block text, URL-prefixed addresses, `hreflang` |
@@ -638,6 +637,19 @@ Tests: `RepeaterTranslationTest`, `WidgetVersioningTest`,
 
 ## 5. Backlog (unscheduled)
 
+**Live server — verify before the next release**
+- **The queue worker is not running.** `jobs` holds 6 rows and no
+  `queue:work` process is running, so the outbound entitlement webhooks
+  (`SendEntitlementWebhook`) are queued and never delivered. Shared hosting
+  cannot run a daemon: the two cron entries in `DEPLOY.md` §9 have to be
+  added under **Web Tools → Scheduled Tasks**, and `crontab` is blocked for
+  the SSH user so this cannot be checked or fixed over SSH.
+- **The scheduler has never run.** `pages:publish-scheduled` is registered
+  and `schedule:list` shows it, but it only fires if the `schedule:run`
+  cron entry is in place — so a page saved with a future date will not go
+  live on its own.
+- Backups of the database and `storage/app/public` are not automated.
+
 **Housekeeping / correctness**
 - Rebrand defaults: `.env.example` `APP_NAME=Laravel` → `Agape Infosys`;
   `config/app.php` default still `Laravel`.
@@ -646,6 +658,7 @@ Tests: `RepeaterTranslationTest`, `WidgetVersioningTest`,
 - Refresh docs: `README.md` is still the stock Laravel readme.
 - Add `.ai/rules` (the `AGENTS.md` references it but the directory does not
   exist).
+- `logo.png` sits untracked in the project root; nothing references it yet.
 
 **Features**
 - Refund workflow (admin action + gateway refund call + entitlement revoke).
@@ -655,6 +668,14 @@ Tests: `RepeaterTranslationTest`, `WidgetVersioningTest`,
 - Multiple currencies per plan (models already store `currency`).
 - Dunning/expiry reminders when a subscription approaches `ends_at`.
 - Webhook delivery log UI (inbound events are stored; outbound attempts are not).
+- A retention policy for `page_views` — it is a row per public request and
+  needs pruning before the table matters.
+- Drag-to-reorder for the navigation editor (the order is set by number
+  today).
+- A/B testing for pages.
+- Multi-page forms.
+- Two-factor authentication, and a team or organisation structure above
+  single users.
 
 **Product API**
 - Sandbox/live key pairs per product (currently one `api_key`/`api_secret`).
