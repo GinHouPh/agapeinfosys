@@ -94,7 +94,13 @@ class CashfreeDriver implements PaymentGatewayDriver
             throw new GatewayException('Cashfree did not return a payment session id.');
         }
 
-        $payable->recordGatewayResult(['gateway_order_id' => (string) $response->json('cf_order_id')]);
+        $payable->recordGatewayResult(
+            ['gateway_order_id' => (string) $response->json('cf_order_id')],
+            [
+                'payment_session_id' => $session,
+                'checkout_mode' => $this->gateway->isLive() ? 'production' : 'sandbox',
+            ],
+        );
 
         return CheckoutSession::inline('cashfree', [
             'payment_session_id' => $session,

@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\ShopOrder;
 use App\Models\Subscription;
+use App\Services\Payments\CheckoutPayload;
 use App\Services\Payments\Exceptions\GatewayException;
 use App\Services\Payments\GatewayManager;
 use App\Services\Shop\Cart;
@@ -110,18 +111,12 @@ class CheckoutController extends Controller
 
         $driver = $order->gateway;
 
-        $payload = session('checkout_session');
+        $payload = CheckoutPayload::resolve($order, $driver, session('checkout_session'));
         $form = session('checkout_form');
-
-        if ($payload === null && $driver !== null && $driver->driver === 'sandbox') {
-            $sandbox = app(GatewayManager::class)->make($driver);
-
-            $payload = $sandbox->createCheckout($order)->payload;
-        }
 
         return view('shop.pay', [
             'order' => $order,
-            'payload' => is_array($payload) ? $payload : [],
+            'payload' => $payload,
             'form' => is_array($form) ? $form : null,
             'script' => $driver?->checkoutScript(),
         ]);

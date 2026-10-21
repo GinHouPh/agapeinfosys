@@ -269,6 +269,12 @@ class ShopCheckoutTest extends TestCase
             ->assertOk()
             ->assertSee('session_abc123', false)
             ->assertSee('sdk.cashfree.com/js/v3/cashfree.js', false);
+
+        // A reload must not strand the customer on an "expired" page.
+        $this->get(route('shop.pay', $order))
+            ->assertOk()
+            ->assertSee('session_abc123', false)
+            ->assertDontSee('This checkout session has expired');
     }
 
     public function test_expired_cart_order_shows_the_expired_state(): void

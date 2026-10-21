@@ -71,6 +71,8 @@
                     <p class="text-center text-xs text-muted">
                         You will be redirected back here once payment completes.
                     </p>
+
+                    <p id="checkout-error" class="hidden rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert"></p>
                 @else
                     <p class="text-sm text-muted">
                         This checkout session has expired. Go back to
@@ -94,19 +96,58 @@
         <script>
             (function () {
                 var payload = @json($payload);
+                var button = document.getElementById('inline-checkout');
+                var errorBox = document.getElementById('checkout-error');
 
-                // Cashfree checkout opens on the hosted payment page and
-                // returns the customer to the order result URL.
+                function showError(message) {
+                    if (errorBox) {
+                        errorBox.textContent = message;
+                        errorBox.classList.remove('hidden');
+                    }
+
+                    console.error(message);
+                }
+
+                if (typeof Cashfree === 'undefined') {
+                    showError('Could not load the payment SDK. Check your connection and reload the page.');
+
+                    return;
+                }
+
                 var cashfree = Cashfree({ mode: payload.mode });
 
+                function handleResult(result) {
+                    if (result && result.error) {
+                        showError(result.error.message || 'Unable to open the payment page.');
+                    }
+                }
+
+                function handleFailure(error) {
+                    if (button) {
+                        button.disabled = false;
+                    }
+
+                    showError(error && error.message ? error.message : 'Unable to open the payment page.');
+                }
+
                 function openCheckout() {
-                    cashfree.checkout({
+                    if (button) {
+                        button.disabled = true;
+                    }
+
+                    var request = cashfree.checkout({
                         paymentSessionId: payload.payment_session_id,
                         redirectTarget: '_self',
                     });
+
+                    if (request && typeof request.then === 'function') {
+                        request.then(handleResult).catch(handleFailure);
+                    }
                 }
 
-                document.getElementById('inline-checkout').addEventListener('click', openCheckout);
+                if (button) {
+                    button.addEventListener('click', openCheckout);
+                }
 
                 // Auto-open for a smoother flow.
                 openCheckout();

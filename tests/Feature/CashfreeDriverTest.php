@@ -91,6 +91,7 @@ class CashfreeDriverTest extends TestCase
         $this->assertSame('sandbox', $session->payload['mode']);
 
         $this->assertSame('CF123456', $order->refresh()->gateway_order_id);
+        $this->assertSame('session_abc123', $order->gateway_payload['payment_session_id'] ?? null);
 
         Http::assertSent(function (Request $request) use ($order): bool {
             $body = $request->data();
@@ -113,6 +114,30 @@ class CashfreeDriverTest extends TestCase
                 && str_contains((string) data_get($body, 'order_meta.return_url'), $order->reference)
                 && str_ends_with((string) data_get($body, 'order_meta.notify_url'), '/api/webhooks/cashfree');
         });
+    }
+
+    public function test_pay_page_rebuilds_the_cashfree_session_after_the_flash_is_gone(): void
+    {
+        $gateway = $this->cashfreeGateway();
+        [$product, , $order] = $this->pendingOrder($gateway);
+
+        Http::fake([
+            'sandbox.cashfree.com/pg/orders' => Http::response([
+                'cf_order_id' => 'CF123456',
+                'order_id' => $order->reference,
+                'order_status' => 'ACTIVE',
+                'payment_session_id' => 'session_abc123',
+            ], 200),
+        ]);
+
+        app(GatewayManager::class)->make($gateway)->createCheckout($order);
+
+        // Do not flash anything: the payload must come from the order itself.
+        $this->get(route('checkout.pay', [$product, $order]))
+            ->assertOk()
+            ->assertSee('session_abc123', false)
+            ->assertSee('"mode":"sandbox"', false)
+            ->assertDontSee('This checkout session has expired');
     }
 
     public function test_live_mode_uses_the_production_api_and_sdk_mode(): void
