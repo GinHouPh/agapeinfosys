@@ -119,6 +119,10 @@ class InstallSchedule extends Command
 
     /**
      * The path of the PHP binary to use.
+     *
+     * The running binary is always right, but a shared host resolves it to
+     * a long version-prefixed path. A shorter name in /usr/bin pointing at
+     * the same file reads better in a cron line, so that is preferred.
      */
     private function phpBinary(): string
     {
@@ -126,6 +130,14 @@ class InstallSchedule extends Command
 
         if ($binary === '' || ! is_file($binary)) {
             return 'php';
+        }
+
+        $real = realpath($binary) ?: $binary;
+
+        foreach (glob('/usr/bin/php*') ?: [] as $candidate) {
+            if ((realpath($candidate) ?: $candidate) === $real) {
+                return $candidate;
+            }
         }
 
         return $binary;
