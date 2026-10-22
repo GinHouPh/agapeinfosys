@@ -24,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (Schedule $schedule): void {
         // Pages saved with a future date go live on their own.
         $schedule->command('pages:publish-scheduled')->everyMinute()->withoutOverlapping();
+
+        // The traffic table is a row per public request; it is trimmed on a
+        // rolling ninety-day window.
+        $schedule->command('traffic:prune')->dailyAt('03:17')->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
