@@ -39,6 +39,39 @@ class CommerceSeeder extends Seeder
                 ]
             );
 
+            if ($data['slug'] === 'smt') {
+                Plan::updateOrCreate(
+                    ['product_id' => $product->getKey(), 'code' => 'basic'],
+                    [
+                        'name' => 'Basic Plan',
+                        'description' => 'Full dictionary access, vocabulary tests, word history & bookmarks for 1 year.',
+                        'billing_type' => 'one_time',
+                        'price' => 25000,
+                        'currency' => 'INR',
+                        'validity_days' => 365,
+                        'interval_days' => null,
+                        'is_active' => true,
+                        'sort_order' => 0,
+                    ]
+                );
+
+                Plan::updateOrCreate(
+                    ['product_id' => $product->getKey(), 'code' => 'pro'],
+                    [
+                        'name' => 'Pro Plan',
+                        'description' => 'Everything in Basic + AI Tutor and Advanced Features.',
+                        'billing_type' => 'one_time',
+                        'price' => 25000,
+                        'currency' => 'INR',
+                        'validity_days' => 365,
+                        'interval_days' => null,
+                        'is_active' => true,
+                        'sort_order' => 1,
+                    ]
+                );
+                continue;
+            }
+
             Plan::updateOrCreate(
                 ['product_id' => $product->getKey(), 'code' => 'monthly'],
                 [

@@ -103,4 +103,51 @@ class EntitlementController extends Controller
                 ?->toPublicArray(),
         ]);
     }
+
+    /**
+     * GET /api/v1/entitlement/status?subscriber_key=...&product=smt
+     *
+     * Check for client/mobile apps using X-Agape-Key header or product slug.
+     */
+    public function status(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'subscriber_key' => ['required', 'string', 'max:190'],
+            'product' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $key = (string) $request->header('X-Agape-Key', '');
+        $productSlug = (string) ($validated['product'] ?? 'smt');
+
+        $product = $key !== ''
+            ? Product::query()->active()->where('api_key', $key)->first()
+            : Product::query()->active()->where('slug', $productSlug)->first();
+
+        if ($product === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found or inactive.',
+            ], 404);
+        }
+
+        $subscription = Subscription::query()
+            ->where('product_id', $product->getKey())
+            ->where('subscriber_key', $validated['subscriber_key'])
+            ->with(['plan', 'lastOrder'])
+            ->first();
+
+        if ($subscription === null) {
+            return response()->json([
+                'subscriber_key' => $validated['subscriber_key'],
+                'entitled' => false,
+                'subscription' => null,
+            ]);
+        }
+
+        return response()->json([
+            'subscriber_key' => $validated['subscriber_key'],
+            'entitled' => $subscription->isEntitled(),
+            'subscription' => $subscription->toPublicArray(),
+        ]);
+    }
 }

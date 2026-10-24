@@ -38,3 +38,19 @@ Route::prefix('v1')->middleware('product.api')->group(function (): void {
     Route::get('/orders/{reference}', [EntitlementController::class, 'order'])
         ->name('api.orders.show');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Mobile / Client SDK Checkout & Entitlement API
+|--------------------------------------------------------------------------
+|
+| Used by client applications (e.g. SMT mobile app) via X-Agape-Key or product slug.
+|
+*/
+Route::prefix('v1')->group(function (): void {
+    Route::post('/checkout/session', \App\Http\Controllers\Api\CheckoutSessionController::class.'@store')
+        ->name('api.checkout.session');
+
+    Route::get('/entitlement/status', [EntitlementController::class, 'status'])
+        ->name('api.entitlement.status');
+});

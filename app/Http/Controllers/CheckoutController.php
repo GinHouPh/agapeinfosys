@@ -9,6 +9,7 @@ use App\Services\Payments\CheckoutPayload;
 use App\Services\Payments\CheckoutService;
 use App\Services\Payments\Exceptions\GatewayException;
 use App\Services\Payments\GatewayManager;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -45,7 +46,7 @@ class CheckoutController extends Controller
      * Create the order and either open the inline checkout or redirect to
      * the provider's hosted page.
      */
-    public function store(Request $request, Product $product): RedirectResponse
+    public function store(Request $request, Product $product): RedirectResponse|JsonResponse
     {
         abort_unless($product->is_active, 404);
 
@@ -72,9 +73,30 @@ class CheckoutController extends Controller
                 $validated['gateway'] ?? null,
             );
         } catch (GatewayException $exception) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ], 422);
+            }
+
             return back()
                 ->withInput()
                 ->withErrors(['plan' => $exception->getMessage()]);
+        }
+
+        if ($request->wantsJson()) {
+            $payload = $session->payload ?? [];
+
+            return response()->json([
+                'success' => true,
+                'order_id' => $order->reference,
+                'amount' => $order->amount,
+                'currency' => $order->currency,
+                'payment_session_id' => $payload['payment_session_id'] ?? null,
+                'environment' => ($payload['mode'] ?? 'sandbox') === 'production' ? 'PRODUCTION' : 'SANDBOX',
+                'session' => $payload,
+            ]);
         }
 
         if ($session->isInline()) {
