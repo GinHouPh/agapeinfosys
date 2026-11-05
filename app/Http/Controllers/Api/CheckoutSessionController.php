@@ -19,16 +19,21 @@ class CheckoutSessionController extends Controller
     /**
      * POST /api/v1/checkout/session
      *
-     * Accepts public request from mobile app with X-Agape-Key or product slug.
+     * The client must send its public X-Agape-Key; the product that key
+     * belongs to decides which catalogue and plans are charged.
      */
     public function store(Request $request): JsonResponse
     {
         $key = (string) $request->header('X-Agape-Key', '');
-        $productSlug = (string) $request->input('product', 'smt');
 
-        $product = $key !== ''
-            ? Product::query()->active()->where('api_key', $key)->first()
-            : Product::query()->active()->where('slug', $productSlug)->first();
+        if ($key === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Missing X-Agape-Key header.',
+            ], 401);
+        }
+
+        $product = Product::query()->active()->where('api_key', $key)->first();
 
         if ($product === null) {
             return response()->json([
@@ -75,6 +80,9 @@ class CheckoutSessionController extends Controller
             'amount' => $order->amount,
             'currency' => $order->currency,
             'payment_session_id' => $payload['payment_session_id'] ?? null,
+            // Recurring plans open a mandate checkout instead; the client
+            // must pick this up rather than expecting a payment session.
+            'subscription_session_id' => $payload['subscription_session_id'] ?? null,
             'environment' => ($payload['mode'] ?? 'sandbox') === 'production' ? 'PRODUCTION' : 'SANDBOX',
             'session' => $payload,
         ]);

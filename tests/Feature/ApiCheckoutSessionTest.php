@@ -78,4 +78,36 @@ class ApiCheckoutSessionTest extends TestCase
                 'subscription' => null,
             ]);
     }
+
+    public function test_checkout_session_requires_an_api_key(): void
+    {
+        $response = $this->withHeaders(['Accept' => 'application/json'])
+            ->postJson('/api/v1/checkout/session', [
+                'plan' => 'basic',
+                'subscriber_key' => 'firebase_uid_test',
+            ]);
+
+        $response->assertUnauthorized()
+            ->assertJson(['success' => false]);
+    }
+
+    public function test_entitlement_status_requires_an_api_key(): void
+    {
+        $response = $this->withHeaders(['Accept' => 'application/json'])
+            ->getJson('/api/v1/entitlement/status?subscriber_key=firebase_uid_test');
+
+        $response->assertUnauthorized()
+            ->assertJson(['success' => false]);
+    }
+
+    public function test_entitlement_status_rejects_an_unknown_api_key(): void
+    {
+        $response = $this->withHeaders([
+            'X-Agape-Key' => 'pk_not_a_real_key',
+            'Accept' => 'application/json',
+        ])->getJson('/api/v1/entitlement/status?subscriber_key=firebase_uid_test');
+
+        $response->assertNotFound()
+            ->assertJson(['success' => false]);
+    }
 }

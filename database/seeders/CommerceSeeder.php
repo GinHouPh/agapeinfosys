@@ -40,6 +40,13 @@ class CommerceSeeder extends Seeder
             );
 
             if ($data['slug'] === 'smt') {
+                // SMT sells Basic and Pro only — retire any legacy plan rows
+                // so an old catalogue can never resurface as purchasable.
+                Plan::query()
+                    ->where('product_id', $product->getKey())
+                    ->whereIn('code', ['monthly', 'yearly', 'lifetime'])
+                    ->update(['is_active' => false]);
+
                 Plan::updateOrCreate(
                     ['product_id' => $product->getKey(), 'code' => 'basic'],
                     [
@@ -69,6 +76,7 @@ class CommerceSeeder extends Seeder
                         'sort_order' => 1,
                     ]
                 );
+
                 continue;
             }
 
