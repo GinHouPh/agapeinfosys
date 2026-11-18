@@ -28,8 +28,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // The traffic table is a row per public request; it is trimmed on a
         // rolling ninety-day window.
         $schedule->command('traffic:prune')->dailyAt('03:17')->withoutOverlapping();
+
+        // Central Licensing anomaly detection & audit log maintenance
+        $schedule->command('license:detect-abuse')->hourly()->withoutOverlapping();
+        $schedule->command('license:prune-logs --days=90')->dailyAt('04:00')->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'can' => EnsurePermission::class,
