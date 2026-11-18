@@ -51,6 +51,10 @@ return [
             'gateways.manage' => 'Manage payment gateways',
         ],
 
+        'Licensing' => [
+            'licensing.manage' => 'Manage software products, licenses, releases and audit logs',
+        ],
+
         'Clients' => [
             'users.manage' => 'Manage client accounts',
             'roles.manage' => 'Manage roles and permissions',

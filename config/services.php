@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'envato' => [
+        'api_token' => env('ENVATO_API_TOKEN'),
+    ],
+
+    'cashfree' => [
+        'app_id' => env('CASHFREE_APP_ID'),
+        'secret_key' => env('CASHFREE_SECRET_KEY'),
+    ],
+
 ];

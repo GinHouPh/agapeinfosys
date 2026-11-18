@@ -68,6 +68,12 @@
                 <x-admin-link :href="route('admin.subscriptions.index')" :active="request()->routeIs('admin.subscriptions.*')" label="Subscriptions" icon="subscriptions" permission="subscriptions.view" />
                 <x-admin-link :href="route('admin.gateways.index')" :active="request()->routeIs('admin.gateways.*')" label="Gateways" icon="gateways" permission="gateways.manage" />
 
+                <p class="admin-sidebar__heading px-4 pt-6 pb-2 font-display text-[11px] tracking-[0.24em] text-muted uppercase">Licensing</p>
+                <x-admin-link :href="route('admin.licensing.products.index')" :active="request()->routeIs('admin.licensing.products.*')" label="Software Products" icon="products" permission="licensing.manage" />
+                <x-admin-link :href="route('admin.licensing.licenses.index')" :active="request()->routeIs('admin.licensing.licenses.*')" label="Licenses" icon="licensing" permission="licensing.manage" />
+                <x-admin-link :href="route('admin.licensing.releases.index')" :active="request()->routeIs('admin.licensing.releases.*')" label="Releases" icon="releases" permission="licensing.manage" />
+                <x-admin-link :href="route('admin.licensing.audit-logs.index')" :active="request()->routeIs('admin.licensing.audit-logs.*')" label="Audit Trail" icon="activity" permission="licensing.manage" />
+
                 <p class="admin-sidebar__heading px-4 pt-6 pb-2 font-display text-[11px] tracking-[0.24em] text-muted uppercase">Settings</p>
                 <x-admin-link :href="route('admin.profile.edit')" :active="request()->routeIs('admin.profile.*')" label="My Profile" icon="profile" />
                 <x-admin-link :href="route('admin.business.edit')" :active="request()->routeIs('admin.business.*')" label="Business Details" icon="business" permission="business.manage" />

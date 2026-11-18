@@ -1,6 +1,7 @@
 @php
     $tabs = [
         ['label' => 'Overview', 'route' => 'dashboard.index', 'active' => 'dashboard.index'],
+        ['label' => 'Licenses', 'route' => 'dashboard.licenses.index', 'active' => 'dashboard.licenses.*'],
         ['label' => 'Orders', 'route' => 'dashboard.orders.index', 'active' => 'dashboard.orders.*'],
         ['label' => 'Subscriptions', 'route' => 'dashboard.subscriptions.index', 'active' => 'dashboard.subscriptions.*'],
         ['label' => 'Access', 'route' => 'dashboard.access.index', 'active' => 'dashboard.access.*'],

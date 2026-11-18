@@ -12,6 +12,10 @@ use App\Http\Controllers\Admin\FormController as AdminFormController;
 use App\Http\Controllers\Admin\FormFieldController as AdminFormFieldController;
 use App\Http\Controllers\Admin\FormSubmissionController as AdminFormSubmissionController;
 use App\Http\Controllers\Admin\GatewayController as AdminGatewayController;
+use App\Http\Controllers\Admin\Licensing\AdminLicenseAuditLogController;
+use App\Http\Controllers\Admin\Licensing\AdminLicenseController;
+use App\Http\Controllers\Admin\Licensing\AdminSoftwareProductController;
+use App\Http\Controllers\Admin\Licensing\AdminSoftwareReleaseController;
 use App\Http\Controllers\Admin\LocaleController as AdminLocaleController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\MediaController as AdminMediaController;
@@ -50,6 +54,7 @@ use App\Http\Controllers\CollectionController as PublicCollectionController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Dashboard\DashboardController as ClientDashboardController;
 use App\Http\Controllers\Dashboard\EntitlementController as DashboardEntitlementController;
+use App\Http\Controllers\Dashboard\LicenseController;
 use App\Http\Controllers\Dashboard\OrderController as DashboardOrderController;
 use App\Http\Controllers\Dashboard\ProfileController as DashboardProfileController;
 use App\Http\Controllers\Dashboard\SubscriptionController as DashboardSubscriptionController;
@@ -178,6 +183,10 @@ Route::prefix('dashboard')->middleware('auth')->group(function (): void {
     Route::post('/logout', [ClientLoginController::class, 'destroy'])->name('logout');
 
     Route::get('/', [ClientDashboardController::class, 'index'])->name('dashboard.index');
+
+    Route::get('/licenses', [LicenseController::class, 'index'])->name('dashboard.licenses.index');
+    Route::post('/licenses/{license}/unbind/{domainBinding}', [LicenseController::class, 'unbindDomain'])->name('dashboard.licenses.unbind');
+    Route::get('/licenses/{license}/download', [LicenseController::class, 'downloadRelease'])->name('dashboard.licenses.download');
 
     Route::get('/orders', [DashboardOrderController::class, 'index'])->name('dashboard.orders.index');
     Route::get('/orders/{order}', [DashboardOrderController::class, 'show'])->name('dashboard.orders.show');
@@ -412,6 +421,22 @@ Route::prefix('admin')->group(function (): void {
         Route::get('shop-orders', [AdminShopOrderController::class, 'index'])->middleware('can:orders.view')->name('admin.shop-orders.index');
         Route::get('shop-orders/{order}', [AdminShopOrderController::class, 'show'])->middleware('can:orders.view')->name('admin.shop-orders.show');
         Route::get('subscriptions', [AdminSubscriptionController::class, 'index'])->middleware('can:subscriptions.view')->name('admin.subscriptions.index');
+
+        /*
+        | Central Licensing Server — software products, licenses, releases & audit logs
+        */
+        Route::prefix('licensing')->name('admin.licensing.')->middleware('can:licensing.manage')->group(function (): void {
+            Route::resource('products', AdminSoftwareProductController::class)->except('show');
+            Route::resource('licenses', AdminLicenseController::class)->except(['edit', 'destroy']);
+            Route::post('licenses/{license}/status', [AdminLicenseController::class, 'updateStatus'])->name('licenses.status');
+            Route::post('licenses/{license}/domains/{domainBinding}/unbind', [AdminLicenseController::class, 'unbindDomain'])->name('licenses.unbind');
+            Route::post('licenses/{license}/extend-support', [AdminLicenseController::class, 'extendSupport'])->name('licenses.extend-support');
+            Route::post('licenses/{license}/reissue-salt', [AdminLicenseController::class, 'reissueSalt'])->name('licenses.reissue-salt');
+            Route::resource('releases', AdminSoftwareReleaseController::class)->except('show');
+            Route::get('releases/{release}/download', [AdminSoftwareReleaseController::class, 'download'])->name('releases.download');
+            Route::post('releases/{release}/verify-integrity', [AdminSoftwareReleaseController::class, 'verifyIntegrity'])->name('releases.verify-integrity');
+            Route::get('audit-logs', [AdminLicenseAuditLogController::class, 'index'])->name('audit-logs.index');
+        });
     });
 });
 

@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\CheckoutSessionController;
 use App\Http\Controllers\Api\EntitlementController;
+use App\Http\Controllers\Api\Licensing\LicenseApiController;
+use App\Http\Controllers\Api\Licensing\LicenseWebhookController;
 use App\Http\Controllers\PaymentWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -48,9 +51,39 @@ Route::prefix('v1')->middleware('product.api')->group(function (): void {
 |
 */
 Route::prefix('v1')->group(function (): void {
-    Route::post('/checkout/session', \App\Http\Controllers\Api\CheckoutSessionController::class.'@store')
+    Route::post('/checkout/session', CheckoutSessionController::class.'@store')
         ->name('api.checkout.session');
 
     Route::get('/entitlement/status', [EntitlementController::class, 'status'])
         ->name('api.entitlement.status');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Central Licensing Server API
+|--------------------------------------------------------------------------
+|
+| Dual-channel licensing engine for CodeCanyon (Envato) and Agape Direct sales.
+|
+*/
+Route::prefix('v1/license')->middleware(['throttle:30,1'])->group(function (): void {
+    // Client Verification & Heartbeat
+    Route::post('/verify', [LicenseApiController::class, 'verify'])
+        ->name('api.license.verify');
+    Route::post('/heartbeat', [LicenseApiController::class, 'heartbeat'])
+        ->name('api.license.heartbeat');
+    Route::post('/deactivate', [LicenseApiController::class, 'deactivate'])
+        ->name('api.license.deactivate');
+
+    // Software Releases & Updates
+    Route::get('/check-update', [LicenseApiController::class, 'checkUpdate'])
+        ->name('api.license.check-update');
+    Route::get('/download-update', [LicenseApiController::class, 'downloadUpdate'])
+        ->name('api.license.download');
+
+    // Ingestion Webhooks
+    Route::post('/webhooks/cashfree', [LicenseWebhookController::class, 'handleCashfreeOrder'])
+        ->name('api.license.webhooks.cashfree');
+    Route::post('/webhooks/envato', [LicenseWebhookController::class, 'handleEnvatoSale'])
+        ->name('api.license.webhooks.envato');
 });

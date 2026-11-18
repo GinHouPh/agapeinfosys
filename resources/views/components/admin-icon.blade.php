@@ -37,6 +37,8 @@
         'shop-orders' => '<circle cx="8" cy="16.5" r="1.3"/><circle cx="14" cy="16.5" r="1.3"/><path d="M3 4h1.8l1.6 9.5h8L16.5 7H6"/>',
         'subscriptions' => '<path d="M4 8.5A4.5 4.5 0 0 1 8.5 4H15"/><path d="m12.5 1.8 2.8 2.2-2.8 2.2"/><path d="M16 11.5A4.5 4.5 0 0 1 11.5 16H5"/><path d="m7.5 18.2-2.8-2.2 2.8-2.2"/>',
         'gateways' => '<rect x="2.5" y="5" width="15" height="10" rx="1.5"/><path d="M2.5 8.5h15"/><path d="M5 12h3"/>',
+        'licensing' => '<path d="M14 6a4 4 0 1 0-7.7 1.5L2.5 11.3V14h2.7v-1.3h2.6V10l1.7-1.7A3.98 3.98 0 0 0 14 6Z"/><circle cx="13" cy="5" r="1"/>',
+        'releases' => '<path d="M4 14.5v1.5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1.5M10 3.5v9M6.5 7l3.5-3.5L13.5 7"/>',
         'profile' => '<circle cx="10" cy="7" r="3"/><path d="M4.5 16.5a5.5 5.5 0 0 1 11 0"/>',
         'business' => '<path d="M4.5 17V4.5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1V17"/><path d="M12.5 8.5h3a1 1 0 0 1 1 1V17"/><path d="M3 17h14"/><path d="M6.5 6.5h3M6.5 9.5h3M6.5 12.5h3"/>',
         'system' => '<path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4M15.3 15.3l-1.4-1.4M6.1 6.1 4.7 4.7"/><circle cx="10" cy="10" r="3.2"/>',
