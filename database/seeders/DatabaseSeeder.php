@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             CommerceSeeder::class,
             ShowcaseProjectSeeder::class,
             RequirementFormSeeder::class,
+            SrsFormSeeder::class,
             PageSeeder::class,
             MenuSeeder::class,
             RoleSeeder::class,

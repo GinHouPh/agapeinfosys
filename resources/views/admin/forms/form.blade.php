@@ -64,10 +64,31 @@
     </div>
 
     <div class="field">
-        <label class="field__label" for="success_message">Success Message</label>
-        <textarea class="input" id="success_message" name="success_message" rows="2"
-                  placeholder="Shown after submit. Use @{{reference}} and @{{name}} placeholders.">{{ old('success_message', $form->success_message) }}</textarea>
-        @error('success_message') <span class="field__error">{{ $message }}</span> @enderror
+        <label class="field__label" for="is_wizard">Wizard Mode</label>
+        <label class="flex cursor-pointer items-center gap-3 border border-line p-3 transition-colors duration-300 hover:border-accent has-[:checked]:border-accent">
+            <input type="checkbox" id="is_wizard" name="is_wizard" value="1" class="h-4 w-4 accent-accent"
+                   @checked(old('is_wizard', $form->is_wizard ?? false))>
+            <span class="text-sm text-white">Render sections as a multi-step wizard (with draft auto-save, JSON import/export &amp; review summary)</span>
+        </label>
+        @error('is_wizard') <span class="field__error">{{ $message }}</span> @enderror
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2">
+        <div class="field">
+            <label class="field__label" for="success_message">Success Message</label>
+            <textarea class="input" id="success_message" name="success_message" rows="2"
+                      placeholder="Shown after submit. Use @{{reference}} and @{{name}} placeholders.">{{ old('success_message', $form->success_message) }}</textarea>
+            @error('success_message') <span class="field__error">{{ $message }}</span> @enderror
+        </div>
+
+        <div class="field">
+            <label class="field__label" for="redirect_url">Redirect URL (optional)</label>
+            <input class="input" type="text" id="redirect_url" name="redirect_url"
+                   value="{{ old('redirect_url', $form->redirect_url) }}"
+                   placeholder="/thank-you or https://...">
+            <p class="text-xs text-muted">Leave blank to show the inline success message.</p>
+            @error('redirect_url') <span class="field__error">{{ $message }}</span> @enderror
+        </div>
     </div>
 
     <div class="grid gap-6 sm:grid-cols-3">

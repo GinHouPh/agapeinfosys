@@ -19,19 +19,31 @@ class FormConditionService
      * @param  array<int, array<string, mixed>>|null  $condition
      * @param  array<string, mixed>  $answers
      */
-    public function isVisible(?array $condition, array $answers): bool
+    public function isVisible(?array $condition, array $answers, string $match = 'all'): bool
     {
         if ($condition === null || $condition === []) {
             return true;
         }
 
+        $isAny = $match === 'any';
+
         foreach ($condition as $rule) {
-            if (! is_array($rule) || ! $this->matches($rule, $answers)) {
+            if (! is_array($rule)) {
+                continue;
+            }
+
+            $matched = $this->matches($rule, $answers);
+
+            if ($isAny && $matched) {
+                return true;
+            }
+
+            if (! $isAny && ! $matched) {
                 return false;
             }
         }
 
-        return true;
+        return ! $isAny;
     }
 
     /**
@@ -46,7 +58,7 @@ class FormConditionService
         $visible = [];
 
         foreach ($fields as $field) {
-            if ($this->isVisible($field->condition, $answers)) {
+            if ($this->isVisible($field->condition, $answers, $field->condition_match ?? 'all')) {
                 $visible[$field->name] = $field;
             }
         }
@@ -76,6 +88,8 @@ class FormConditionService
             'not_equals' => $actual !== $this->readable($expected),
             'contains' => $actual !== '' && str_contains($actual, $this->readable($expected)),
             'not_contains' => ! str_contains($actual, $this->readable($expected)),
+            'greater_than' => is_numeric($actual) && is_numeric($expected) && (float) $actual > (float) $expected,
+            'less_than' => is_numeric($actual) && is_numeric($expected) && (float) $actual < (float) $expected,
             'is_filled' => $actual !== '',
             'is_empty' => $actual === '',
             default => $actual === $this->readable($expected),

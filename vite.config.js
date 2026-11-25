@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/builder/canvas.js',
+                'resources/js/builder/form-editor.js',
             ],
             refresh: true,
             fonts: [

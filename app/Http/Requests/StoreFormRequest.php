@@ -33,11 +33,13 @@ class StoreFormRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:2000'],
             'submit_label' => ['required', 'string', 'max:80'],
             'success_message' => ['nullable', 'string', 'max:400'],
+            'redirect_url' => ['nullable', 'string', 'max:500'],
             'reference_prefix' => ['required', 'string', 'max:10', 'regex:/^[A-Za-z0-9-]+$/'],
             'notify_email' => ['nullable', 'email', 'max:190'],
             'notify_subject' => ['nullable', 'string', 'max:180'],
             'throttle_per_minute' => ['nullable', 'integer', 'min:1', 'max:120'],
             'is_active' => ['sometimes', 'boolean'],
+            'is_wizard' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -57,6 +59,11 @@ class StoreFormRequest extends FormRequest
         $validated['is_active'] = $this->boolean(
             'is_active',
             $this->route('form')?->is_active ?? true,
+        );
+
+        $validated['is_wizard'] = $this->boolean(
+            'is_wizard',
+            $this->route('form')?->is_wizard ?? false,
         );
 
         $validated['notification_settings'] = $this->notificationSettings($validated);

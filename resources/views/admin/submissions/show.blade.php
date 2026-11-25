@@ -29,13 +29,20 @@
 
             <div class="space-y-8">
                 @foreach ($submission->form->fields as $field)
-                    @php $answer = $submission->answerFor($field); @endphp
+                    @php
+                        $answer = $submission->answerFor($field);
+                        $extraText = $submission->answers[$field->name.'_text'] ?? null;
+                        $attachedFile = $submission->answers[$field->name.'_file_name'] ?? null;
+                    @endphp
 
                     <div>
                         <span class="block font-display text-xs tracking-[0.24em] text-muted uppercase">
                             {{ $field->label }}
                             @if ($field->group)
                                 <span class="normal-case">· {{ $field->group }}</span>
+                            @endif
+                            @if ($attachedFile)
+                                <span class="ml-2 font-mono text-[11px] text-accent normal-case">[{{ $attachedFile }}]</span>
                             @endif
                         </span>
 
@@ -45,16 +52,25 @@
                                     <span class="tag">{{ $choice }}</span>
                                 @endforeach
                             </div>
-                        @elseif ($field->type === \App\Enums\FormFieldType::Textarea && $answer !== '—')
+                        @elseif (in_array($field->type, [\App\Enums\FormFieldType::Textarea, \App\Enums\FormFieldType::LargeTextEditor], true) && $answer !== '—')
                             <p class="mt-3 whitespace-pre-line text-body">{{ $answer }}</p>
                         @else
                             <p class="mt-3 text-body">{{ $answer }}</p>
+                        @endif
+
+                        @if (is_string($extraText) && trim($extraText) !== '')
+                            <div class="mt-3 border-l-2 border-accent bg-ink px-4 py-2.5 text-xs text-muted">
+                                <span class="block font-display text-[11px] tracking-wider text-accent uppercase">Additional Details</span>
+                                <p class="mt-1 whitespace-pre-line text-body">{{ $extraText }}</p>
+                            </div>
                         @endif
                     </div>
                 @endforeach
 
                 @php
-                    $known = $submission->form->fields->pluck('name')->all();
+                    $known = $submission->form->fields
+                        ->flatMap(fn ($f) => [$f->name, $f->name.'_text', $f->name.'_file_name'])
+                        ->all();
                     $extra = collect($submission->answers)->except($known);
                 @endphp
 

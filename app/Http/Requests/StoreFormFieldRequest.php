@@ -38,13 +38,19 @@ class StoreFormFieldRequest extends FormRequest
             ],
             'type' => ['required', Rule::enum(FormFieldType::class)],
             'group' => ['nullable', 'string', 'max:120'],
+            'section_id' => ['nullable', 'string', 'max:80', 'regex:/^[a-z0-9_]+$/'],
             'options' => ['nullable', 'string', 'max:4000'],
+            'has_text_input' => ['sometimes', 'boolean'],
+            'text_placeholder' => ['nullable', 'string', 'max:240'],
             'placeholder' => ['nullable', 'string', 'max:190'],
             'help_text' => ['nullable', 'string', 'max:240'],
-            'width' => ['nullable', Rule::in(['full', 'half'])],
+            'default_value' => ['nullable', 'string', 'max:500'],
+            'width' => ['nullable', Rule::in(['full', 'half', 'third'])],
+            'css_class' => ['nullable', 'string', 'max:120'],
             'validation' => ['nullable', 'string', 'max:400'],
+            'condition_match' => ['nullable', Rule::in(['all', 'any'])],
             'condition_field' => ['nullable', 'string', 'max:100'],
-            'condition_operator' => ['nullable', Rule::in(['equals', 'not_equals', 'contains', 'not_contains', 'is_filled', 'is_empty'])],
+            'condition_operator' => ['nullable', Rule::in(['equals', 'not_equals', 'contains', 'not_contains', 'greater_than', 'less_than', 'is_filled', 'is_empty'])],
             'condition_value' => ['nullable', 'string', 'max:190'],
             'file_mimes' => ['nullable', 'string', 'max:400'],
             'file_max_kilobytes' => ['nullable', 'integer', 'min:1', 'max:204800'],
@@ -88,6 +94,11 @@ class StoreFormFieldRequest extends FormRequest
         $validated['is_required'] = $this->boolean(
             'is_required',
             $this->route('field')?->is_required ?? false,
+        );
+
+        $validated['has_text_input'] = $this->boolean(
+            'has_text_input',
+            $this->route('field')?->has_text_input ?? false,
         );
 
         $validated['width'] = $validated['width'] ?? 'full';

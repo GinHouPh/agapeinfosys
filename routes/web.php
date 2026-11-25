@@ -97,6 +97,10 @@ Route::get('/requirements', [FormController::class, 'showRequirement'])->name('r
 Route::post('/requirements', [FormController::class, 'storeRequirement'])
     ->middleware('throttle:6,1')
     ->name('requirements.store');
+Route::get('/srs', [FormController::class, 'showSrs'])->name('srs.create');
+Route::post('/srs', [FormController::class, 'storeSrs'])
+    ->middleware('throttle:6,1')
+    ->name('srs.store');
 Route::get('/forms/{form:slug}', [FormController::class, 'show'])->name('forms.show');
 Route::post('/forms/{form:slug}', [FormController::class, 'store'])
     ->middleware('throttle:6,1')
@@ -272,6 +276,8 @@ Route::prefix('admin')->group(function (): void {
         */
         Route::resource('forms', AdminFormController::class, ['as' => 'admin'])
             ->except('show')->middleware('can:forms.manage');
+        Route::post('forms/{form}/duplicate', [AdminFormController::class, 'duplicate'])->middleware('can:forms.manage')->name('admin.forms.duplicate');
+        Route::put('forms/{form}/builder', [AdminFormFieldController::class, 'sync'])->middleware('can:forms.manage')->name('admin.forms.builder.sync');
         Route::post('forms/{form}/fields', [AdminFormFieldController::class, 'store'])->middleware('can:forms.manage')->name('admin.forms.fields.store');
         Route::put('forms/{form}/fields/{field}', [AdminFormFieldController::class, 'update'])->middleware('can:forms.manage')->name('admin.forms.fields.update');
         Route::delete('forms/{form}/fields/{field}', [AdminFormFieldController::class, 'destroy'])->middleware('can:forms.manage')->name('admin.forms.fields.destroy');

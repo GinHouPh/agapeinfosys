@@ -23,10 +23,13 @@ class Form extends Model
         'description',
         'submit_label',
         'success_message',
+        'redirect_url',
         'notification_settings',
         'throttle_per_minute',
         'reference_prefix',
         'is_active',
+        'is_wizard',
+        'wizard_settings',
     ];
 
     /**
@@ -38,7 +41,17 @@ class Form extends Model
             'notification_settings' => 'array',
             'throttle_per_minute' => 'integer',
             'is_active' => 'boolean',
+            'is_wizard' => 'boolean',
+            'wizard_settings' => 'array',
         ];
+    }
+
+    /**
+     * Whether this form renders as a multi-step wizard.
+     */
+    public function isWizard(): bool
+    {
+        return (bool) $this->is_wizard;
     }
 
     /**

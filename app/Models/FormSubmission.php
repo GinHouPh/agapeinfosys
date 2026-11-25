@@ -83,4 +83,73 @@ class FormSubmission extends Model
 
         return (string) $answer;
     }
+
+    /**
+     * Convert flat answers into the standardized 2-level SRSFormData dictionary
+     * keyed by sectionId -> fieldId.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function toSrsFormData(): array
+    {
+        $this->loadMissing('form.fields');
+
+        $answers = $this->answers ?? [];
+        $data = [];
+
+        foreach ($this->form->fields as $field) {
+            $sectionId = ($field->section_id !== null && $field->section_id !== '')
+                ? $field->section_id
+                : Str::slug($field->group ?: 'general', '_');
+
+            if (array_key_exists($field->name, $answers)) {
+                $val = $answers[$field->name];
+                if ($val !== null && $val !== '' && $val !== []) {
+                    $data[$sectionId][$field->name] = $val;
+                }
+            }
+
+            $textKey = $field->name.'_text';
+            if (array_key_exists($textKey, $answers) && is_string($answers[$textKey]) && trim($answers[$textKey]) !== '') {
+                $data[$sectionId][$textKey] = $answers[$textKey];
+            }
+
+            $fileKey = $field->name.'_file_name';
+            if (array_key_exists($fileKey, $answers) && is_string($answers[$fileKey]) && trim($answers[$fileKey]) !== '') {
+                $data[$sectionId][$fileKey] = $answers[$fileKey];
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Serialize answers into the standardized LLM prompt Markdown format
+     * matching formatFormDataForPrompt(SRSFormData).
+     */
+    public function toSrsPrompt(): string
+    {
+        $output = '';
+
+        foreach ($this->toSrsFormData() as $sectionId => $fields) {
+            $sectionTitle = strtoupper(str_replace('_', ' ', $sectionId));
+            $output .= "\n## {$sectionTitle}\n";
+
+            foreach ($fields as $fieldId => $value) {
+                if ($value === null || $value === '' || $value === []) {
+                    continue;
+                }
+
+                $fieldLabel = str_replace('_', ' ', $fieldId);
+
+                if (is_array($value)) {
+                    $output .= '- '.$fieldLabel.': '.implode(', ', $value)."\n";
+                } else {
+                    $output .= '- '.$fieldLabel.': '.$value."\n";
+                }
+            }
+        }
+
+        return ltrim($output);
+    }
 }

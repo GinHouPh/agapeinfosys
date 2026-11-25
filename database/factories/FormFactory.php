@@ -39,4 +39,14 @@ class FormFactory extends Factory
             'is_active' => false,
         ]);
     }
+
+    /**
+     * Render the form as a multi-step wizard.
+     */
+    public function wizard(): static
+    {
+        return $this->state(fn (): array => [
+            'is_wizard' => true,
+        ]);
+    }
 }

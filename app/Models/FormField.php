@@ -24,12 +24,18 @@ class FormField extends Model
         'name',
         'type',
         'group',
+        'section_id',
         'options',
+        'has_text_input',
+        'text_placeholder',
         'placeholder',
         'help_text',
+        'default_value',
         'validation',
         'condition',
+        'condition_match',
         'width',
+        'css_class',
         'file_settings',
         'is_required',
         'sort_order',
@@ -43,6 +49,7 @@ class FormField extends Model
         return [
             'type' => FormFieldType::class,
             'options' => 'array',
+            'has_text_input' => 'boolean',
             'validation' => 'array',
             'condition' => 'array',
             'file_settings' => 'array',
@@ -124,5 +131,43 @@ class FormField extends Model
         }
 
         return $groups;
+    }
+
+    /**
+     * Group fields into wizard sections with section metadata (id, icon, short_title).
+     *
+     * @param  array<string, array{icon?: string, short_title?: string, description?: string}>  $sectionMeta
+     * @return array<int, array{id: string, title: string, short_title: string, icon: string, description: string|null, fields: Collection<int, FormField>}>
+     */
+    public static function wizardSections(iterable $fields, array $sectionMeta = []): array
+    {
+        $sections = [];
+
+        foreach ($fields as $field) {
+            $title = ($field->group !== null && $field->group !== '') ? $field->group : 'General';
+            $id = ($field->section_id !== null && $field->section_id !== '')
+                ? $field->section_id
+                : Str::slug($title, '_');
+
+            $last = array_key_last($sections);
+
+            if ($last === null || $sections[$last]['id'] !== $id || $sections[$last]['title'] !== $title) {
+                $meta = $sectionMeta[$id] ?? $sectionMeta[$title] ?? [];
+                $shortTitle = $meta['short_title'] ?? preg_replace('/^\d+\.\s*/', '', $title);
+
+                $sections[] = [
+                    'id' => $id,
+                    'title' => $title,
+                    'short_title' => is_string($shortTitle) && $shortTitle !== '' ? $shortTitle : $title,
+                    'icon' => is_string($meta['icon'] ?? null) ? $meta['icon'] : '📋',
+                    'description' => is_string($meta['description'] ?? null) ? $meta['description'] : null,
+                    'fields' => collect(),
+                ];
+            }
+
+            $sections[array_key_last($sections)]['fields']->push($field);
+        }
+
+        return $sections;
     }
 }

@@ -6,6 +6,9 @@
 
     Expects: $form (App\Models\Form) and $groups (field groups from Form::groups()).
 --}}
+@if ($form->isWizard())
+    @include('partials.form-wizard')
+@else
 <div class="shell max-w-4xl">
     @if (session('status'))
         <p class="form-status" role="status">{{ session('status') }}</p>
@@ -54,7 +57,7 @@
                         </div>
                     @endif
 
-                    <div class="grid gap-7 sm:grid-cols-2">
+                    <div class="grid gap-7 sm:grid-cols-6">
                         @foreach ($group['fields'] as $field)
                             @include('forms.field', ['field' => $field])
                         @endforeach
@@ -76,6 +79,7 @@
         </form>
     @endif
 </div>
+@endif
 
 @if ($honeypot ?? null)
     <script>
@@ -104,6 +108,8 @@
                     case 'not_equals': return actual !== expected;
                     case 'contains': return actual !== '' && actual.indexOf(expected) !== -1;
                     case 'not_contains': return actual.indexOf(expected) === -1;
+                    case 'greater_than': return actual !== '' && !isNaN(actual) && !isNaN(expected) && Number(actual) > Number(expected);
+                    case 'less_than': return actual !== '' && !isNaN(actual) && !isNaN(expected) && Number(actual) < Number(expected);
                     case 'is_filled': return actual !== '';
                     case 'is_empty': return actual === '';
                     default: return actual === expected;
@@ -119,7 +125,9 @@
                         return;
                     }
 
-                    var show = (rules || []).every(matches);
+                    var matchMode = el.getAttribute('data-condition-match') || 'all';
+                    var list = rules || [];
+                    var show = list.length === 0 ? true : (matchMode === 'any' ? list.some(matches) : list.every(matches));
                     el.classList.toggle('hidden', !show);
 
                     el.querySelectorAll('input, select, textarea').forEach(function (input) {

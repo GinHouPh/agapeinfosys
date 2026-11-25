@@ -132,7 +132,7 @@
     "src": "_roboto-700-normal-YuyVweIx.woff"
   },
   "resources/css/app.css": {
-    "file": "assets/app-C_S4BHup.css",
+    "file": "assets/app-LqyPyK1D.css",
     "name": "app",
     "names": [
       "app.css"
@@ -141,7 +141,7 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-CXR5GIbO.js",
+    "file": "assets/app-C8IdhWAe.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true
@@ -150,6 +150,12 @@
     "file": "assets/canvas-JsPOdXEU.js",
     "name": "canvas",
     "src": "resources/js/builder/canvas.js",
+    "isEntry": true
+  },
+  "resources/js/builder/form-editor.js": {
+    "file": "assets/form-editor-BoiOxVG3.js",
+    "name": "form-editor",
+    "src": "resources/js/builder/form-editor.js",
     "isEntry": true
   }
 }

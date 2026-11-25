@@ -55,6 +55,12 @@
                                     <a href="{{ route('admin.forms.edit', $form) }}" class="text-xs tracking-[0.16em] text-accent uppercase">Edit</a>
                                     <a href="{{ route('admin.submissions.index', ['form' => $form->id]) }}"
                                        class="text-xs tracking-[0.16em] text-muted uppercase hover:text-accent">Inbox</a>
+                                    <form action="{{ route('admin.forms.duplicate', $form) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="text-xs tracking-[0.16em] text-muted uppercase hover:text-accent">
+                                            Duplicate
+                                        </button>
+                                    </form>
                                     <form action="{{ route('admin.forms.destroy', $form) }}" method="POST"
                                           onsubmit="return confirm('Delete this form with all its questions and submissions?');">
                                         @csrf

@@ -14,6 +14,8 @@
             <h1 class="max-w-5xl">
                 @if ($form->slug === \App\Http\Controllers\FormController::REQUIREMENT_FORM_SLUG)
                     Tell us what to <span class="text-accent">build</span>.
+                @elseif ($form->slug === \App\Http\Controllers\FormController::SRS_FORM_SLUG)
+                    Specify what to <span class="text-accent">architect</span>.
                 @else
                     {{ $form->title }}
                 @endif

@@ -28,6 +28,11 @@ class FormController extends Controller
     public const REQUIREMENT_FORM_SLUG = 'requirement-specification';
 
     /**
+     * The slug of the 15-section SRS wizard form behind /srs.
+     */
+    public const SRS_FORM_SLUG = 'srs-specification';
+
+    /**
      * The name of the hidden field a bot fills in and a person does not.
      */
     public const HONEYPOT = 'hp';
@@ -139,6 +144,13 @@ class FormController extends Controller
 
         $this->notifier->notify($form, $submission);
 
+        if (is_string($form->redirect_url) && $form->redirect_url !== '') {
+            return redirect()
+                ->to($form->redirect_url)
+                ->with('status', $form->successMessageFor($submission))
+                ->with('reference', $submission->reference);
+        }
+
         return $back
             ->with('status', $form->successMessageFor($submission))
             ->with('reference', $submission->reference);
@@ -204,6 +216,37 @@ class FormController extends Controller
     }
 
     /**
+     * Alias entry point: the 15-section SRS wizard form at /srs.
+     */
+    public function showSrs(): View
+    {
+        $form = Form::query()
+            ->active()
+            ->where('slug', self::SRS_FORM_SLUG)
+            ->with('fields')
+            ->firstOrFail();
+
+        return view('forms.show', [
+            'form' => $form,
+            'groups' => FormField::groupForRenderer($form->fields),
+            'honeypot' => self::HONEYPOT,
+        ]);
+    }
+
+    /**
+     * Alias endpoint: store an SRS specification submission.
+     */
+    public function storeSrs(Request $request): RedirectResponse
+    {
+        $form = Form::query()
+            ->active()
+            ->where('slug', self::SRS_FORM_SLUG)
+            ->firstOrFail();
+
+        return $this->storeSubmission($request, $form, redirect()->route('srs.create'));
+    }
+
+    /**
      * Build validation rules from the form's field definitions.
      *
      * @param  array<string, FormField>  $visible
@@ -214,8 +257,18 @@ class FormController extends Controller
         $rules = [];
 
         foreach ($visible as $field) {
+            if ($field->type->isLayoutOnly()) {
+                continue;
+            }
+
             $key = "answers.{$field->name}";
             $base = $field->is_required ? 'required' : 'nullable';
+
+            if ($field->type->isConsent()) {
+                $rules[$key] = $field->is_required ? ['required', 'accepted'] : ['nullable', 'boolean'];
+
+                continue;
+            }
 
             if ($field->type->isFile()) {
                 $rules[$key] = array_filter([
@@ -232,24 +285,44 @@ class FormController extends Controller
                 $rules[$key] = [$base, 'array'];
                 $rules["{$key}.*"] = [Rule::in($field->options ?? [])];
 
+                if ($field->has_text_input) {
+                    $rules["{$key}_text"] = ['nullable', 'string', 'max:2000'];
+                }
+
                 continue;
             }
 
             $rules[$key] = array_filter(array_merge([
                 $base,
                 match ($field->type) {
-                    FormFieldType::Text => 'string',
+                    FormFieldType::Text,
+                    FormFieldType::Hidden,
+                    FormFieldType::Phone,
+                    FormFieldType::Time,
+                    FormFieldType::Textarea,
+                    FormFieldType::LargeTextEditor => 'string',
                     FormFieldType::Email => 'email',
-                    FormFieldType::Phone => 'string',
+                    FormFieldType::Url => 'url',
                     FormFieldType::Number => 'numeric',
-                    FormFieldType::Textarea => 'string',
                     FormFieldType::Select,
                     FormFieldType::Radio => Rule::in($field->options ?? []),
                     FormFieldType::Date => 'date',
-                    FormFieldType::File => 'string',
+                    default => 'string',
                 },
-                'max:'.($field->type === FormFieldType::Textarea ? 5000 : 500),
+                'max:'.match ($field->type) {
+                    FormFieldType::LargeTextEditor => 50000,
+                    FormFieldType::Textarea => 5000,
+                    default => 500,
+                },
             ], $field->validationRules()));
+
+            if ($field->has_text_input) {
+                $rules["{$key}_text"] = ['nullable', 'string', 'max:2000'];
+            }
+
+            if ($field->type === FormFieldType::LargeTextEditor) {
+                $rules["{$key}_file_name"] = ['nullable', 'string', 'max:255'];
+            }
         }
 
         return $rules;
@@ -270,6 +343,14 @@ class FormController extends Controller
 
             if ($field->type->isMultivalue()) {
                 $names["answers.{$field->name}.*"] = $field->label;
+            }
+
+            if ($field->has_text_input) {
+                $names["answers.{$field->name}_text"] = $field->label.' (Additional Details)';
+            }
+
+            if ($field->type === FormFieldType::LargeTextEditor) {
+                $names["answers.{$field->name}_file_name"] = $field->label.' (Attachment)';
             }
         }
 

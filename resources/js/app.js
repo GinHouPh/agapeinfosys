@@ -325,6 +325,8 @@ const initBrandLogoFields = () => {
     });
 };
 
+import { initFormWizards } from './form-wizard';
+
 document.addEventListener('DOMContentLoaded', () => {
     initNav();
     initSearch();
@@ -334,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAdminSidebar();
     initMarketNav();
     initBrandLogoFields();
+    initFormWizards();
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
 });
