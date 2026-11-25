@@ -82,7 +82,27 @@ class ShopBrowseTest extends TestCase
             ->assertSee('Add to cart', false)
             ->assertSee('same corner of the marketplace', false)
             ->assertSee($related->name)
+            ->assertDontSee('Choose your plan', false)
             ->assertDontSee('Need a custom build?', false);
+    }
+
+    public function test_product_detail_renders_markdown_body_preview_url_and_gallery(): void
+    {
+        $product = Product::factory()->create([
+            'is_active' => true,
+            'preview_url' => 'https://demo.example.com',
+            'body' => "## Feature Highlights\n\n- [Admin Demo](https://admin.example.com)\n\n![Dashboard](https://example.com/dash.png)",
+            'gallery' => ['https://example.com/shot-1.png'],
+        ]);
+
+        $this->get('/shop/'.$product->slug)
+            ->assertOk()
+            ->assertSee('https://demo.example.com', false)
+            ->assertSee('<h2>Feature Highlights</h2>', false)
+            ->assertSee('https://admin.example.com', false)
+            ->assertSee('https://example.com/dash.png', false)
+            ->assertSee('Screenshots', false)
+            ->assertSee('https://example.com/shot-1.png', false);
     }
 
     public function test_descendant_ids_cover_the_whole_subtree(): void

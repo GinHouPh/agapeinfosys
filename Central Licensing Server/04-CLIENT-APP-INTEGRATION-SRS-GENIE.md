@@ -78,11 +78,6 @@ class SRSLocalLicenseGate
      */
     public static function verifyActiveLicense(): array
     {
-        // 1. Localhost exemption
-        if (self::isLocalEnvironment()) {
-            return ['valid' => true, 'is_local' => true, 'tier' => 'developer'];
-        }
-
         $pdo = getDbConnection();
         $stmt = $pdo->prepare("SELECT setting_key, setting_value FROM business_settings WHERE setting_key IN ('srs_license_key', 'srs_activation_hash', 'srs_client_salt', 'srs_license_tier', 'srs_last_heartbeat')");
         $stmt->execute();
@@ -95,7 +90,7 @@ class SRSLocalLicenseGate
         $lastHeartbeat = (int)($settings['srs_last_heartbeat'] ?? 0);
 
         if (empty($key) || empty($hash) || empty($salt)) {
-            return ['valid' => false, 'error' => 'UNLICENSED_INSTANCE', 'message' => 'Software not activated.'];
+            return ['valid' => false, 'error' => 'UNLICENSED_INSTANCE', 'message' => 'Software not activated. Please activate with your Envato Purchase Code or Agape License Key.'];
         }
 
         $currentDomain = strtolower(preg_replace('/:\d+$/', '', preg_replace('/^www\./', '', $_SERVER['HTTP_HOST'] ?? '')));

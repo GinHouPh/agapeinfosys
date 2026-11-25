@@ -49,6 +49,8 @@ class ProductController extends Controller
         $attributes = $request->validated();
 
         $attributes['logo'] = $this->storeUploadedImage($request->file('logo'), 'uploads/products');
+        $attributes['gallery'] = $this->resolveGallery($request);
+        unset($attributes['gallery_files']);
 
         Product::create($attributes);
 
@@ -80,6 +82,8 @@ class ProductController extends Controller
             $product->logo,
             'uploads/products'
         );
+        $attributes['gallery'] = $this->resolveGallery($request);
+        unset($attributes['gallery_files']);
 
         $product->update($attributes);
 
@@ -113,5 +117,28 @@ class ProductController extends Controller
             ->route('admin.products.edit', $product)
             ->with('rotated_secret', $secret)
             ->with('status', 'API credentials rotated.');
+    }
+
+    /**
+     * Combine newline-separated gallery URLs/paths with newly uploaded screenshots.
+     *
+     * @return list<string>
+     */
+    private function resolveGallery(StoreProductRequest $request): array
+    {
+        $raw = (string) $request->validated('gallery', '');
+        $items = array_values(array_filter(
+            array_map('trim', preg_split('/\r\n|\r|\n/', $raw) ?: []),
+            static fn (string $line): bool => $line !== ''
+        ));
+
+        foreach ($request->file('gallery_files', []) as $file) {
+            $stored = $this->storeUploadedImage($file, 'uploads/products/gallery');
+            if ($stored !== null) {
+                $items[] = $stored;
+            }
+        }
+
+        return array_values(array_unique($items));
     }
 }

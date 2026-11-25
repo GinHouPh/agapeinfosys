@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Agape Central Licensing — Client Drop-in Verification & Auto-Update Kit
  *
@@ -6,20 +7,23 @@
  * Handles server verification, offline HMAC validation, heartbeat sync, and 1-click updates.
  *
  * @version 1.0.0
+ *
  * @author AgapeInfosys Engineering Team
+ *
  * @link https://agapeinfosys.com
  */
-
 class AgapeLicenseClient
 {
     private string $serverUrl;
+
     private string $productSlug;
+
     private int $timeout;
 
     /**
-     * @param string $productSlug The product slug registered on agapeinfosys.com (e.g. 'srs-genie')
-     * @param string $serverUrl The central licensing server base URL (default: 'https://agapeinfosys.com/api/v1/license')
-     * @param int $timeout HTTP request timeout in seconds
+     * @param  string  $productSlug  The product slug registered on agapeinfosys.com (e.g. 'srs-genie')
+     * @param  string  $serverUrl  The central licensing server base URL (default: 'https://agapeinfosys.com/api/v1/license')
+     * @param  int  $timeout  HTTP request timeout in seconds
      */
     public function __construct(
         string $productSlug,
@@ -120,8 +124,12 @@ class AgapeLicenseClient
         string $expectedHash,
         ?int $expiresAtTimestamp = null
     ): bool {
-        if ($this->isLocalhost($domain)) {
-            return true;
+        if (empty($licenseKey) || empty($salt) || empty($expectedHash)) {
+            return false;
+        }
+
+        if ($expiresAtTimestamp !== null && $expiresAtTimestamp < time()) {
+            return false;
         }
 
         $payload = implode('::', [
@@ -214,6 +222,7 @@ class AgapeLicenseClient
 
         if (! $success || $httpCode !== 200) {
             @unlink($tempZip);
+
             return false;
         }
 
@@ -225,15 +234,17 @@ class AgapeLicenseClient
         }
 
         // 3. Extract Archive
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($tempZip) === true) {
             $zip->extractTo($destinationDir);
             $zip->close();
             @unlink($tempZip);
+
             return true;
         }
 
         @unlink($tempZip);
+
         return false;
     }
 

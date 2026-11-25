@@ -22,8 +22,11 @@ class Product extends Model
         'name',
         'slug',
         'domain',
+        'preview_url',
         'description',
+        'body',
         'logo',
+        'gallery',
         'callback_url',
         'api_key',
         'api_secret',
@@ -42,6 +45,7 @@ class Product extends Model
     {
         return [
             'api_secret' => 'encrypted',
+            'gallery' => 'array',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];
@@ -125,5 +129,21 @@ class Product extends Model
         }
 
         return Storage::url($this->logo);
+    }
+
+    /**
+     * Live preview URL, falling back to the product's domain when set.
+     */
+    public function previewUrl(): ?string
+    {
+        if ($this->preview_url !== null && $this->preview_url !== '') {
+            return $this->preview_url;
+        }
+
+        if ($this->domain !== null && $this->domain !== '') {
+            return 'https://'.$this->domain;
+        }
+
+        return null;
     }
 }

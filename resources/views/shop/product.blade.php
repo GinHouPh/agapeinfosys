@@ -98,9 +98,9 @@
 
                         <div class="flex flex-wrap items-center justify-between gap-4 border-t border-line px-6 py-4">
                             <div class="flex flex-wrap items-center gap-3">
-                                @if ($product->domain)
+                                @if ($product->previewUrl())
                                     <a
-                                        href="https://{{ $product->domain }}"
+                                        href="{{ $product->previewUrl() }}"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         class="btn btn--accent"
@@ -110,9 +110,9 @@
                                     </a>
                                 @endif
 
-                                @if ($plans->isNotEmpty())
-                                    <a href="#plans" class="btn btn--ghost">
-                                        Compare Plans
+                                @if (! empty($product->gallery))
+                                    <a href="#screenshots" class="btn btn--ghost">
+                                        Screenshots ({{ count($product->gallery) }})
                                         <span class="btn__strip" aria-hidden="true"></span>
                                     </a>
                                 @endif
@@ -129,17 +129,21 @@
                     {{-- Section Navigation Tabs --}}
                     <nav class="mt-10 flex flex-wrap gap-2 border-b border-line pb-4" aria-label="Product sections">
                         <a href="#overview" class="tag border-accent text-accent">Overview</a>
-                        @if ($plans->isNotEmpty())
-                            <a href="#plans" class="tag hover:border-accent hover:text-accent">Plans &amp; Licensing ({{ $plans->count() }})</a>
+                        @if (! empty($product->gallery))
+                            <a href="#screenshots" class="tag hover:border-accent hover:text-accent">Screenshots ({{ count($product->gallery) }})</a>
                         @endif
                         <a href="#support-delivery" class="tag hover:border-accent hover:text-accent">Support &amp; Delivery</a>
                     </nav>
 
-                    {{-- Overview --}}
+                    {{-- Overview (Markdown body or short description fallback) --}}
                     <section id="overview" class="mt-10 scroll-mt-28">
                         <h2 class="text-2xl text-white">About {{ $product->name }}</h2>
 
-                        @if ($product->description)
+                        @if ($product->body)
+                            <div class="prose-dark mt-6 max-w-3xl">
+                                {!! \Illuminate\Support\Str::markdown($product->body, ['html_input' => 'allow', 'allow_unsafe_links' => false]) !!}
+                            </div>
+                        @elseif ($product->description)
                             <div class="prose-dark mt-5 max-w-3xl">
                                 <p>{{ $product->description }}</p>
                             </div>
@@ -147,7 +151,7 @@
                             <p class="mt-4 text-sm text-muted">Full product documentation and release notes are provided in your client dashboard after purchase.</p>
                         @endif
 
-                        <div class="mt-8 grid gap-4 sm:grid-cols-3">
+                        <div class="mt-10 grid gap-4 sm:grid-cols-3">
                             <div class="admin-card !p-5">
                                 <p class="font-display text-xs tracking-[0.2em] text-accent uppercase">01 / Licensing</p>
                                 <h3 class="mt-2 font-display text-lg text-white">Verified Key</h3>
@@ -168,66 +172,33 @@
                         </div>
                     </section>
 
-                    {{-- Plans & Licensing Grid --}}
-                    <section id="plans" class="mt-14 scroll-mt-28">
-                        @if ($plans->isNotEmpty())
-                            <h2 class="text-2xl text-white">Choose your plan</h2>
-                            <p class="mt-2 text-sm text-muted">Pick a plan below — it is added to your cart and activated after checkout.</p>
+                    {{-- Screenshots Gallery --}}
+                    @if (! empty($product->gallery))
+                        <section id="screenshots" class="mt-14 scroll-mt-28 border-t border-line pt-10">
+                            <h2 class="text-2xl text-white">Screenshots</h2>
 
-                            <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                                @foreach ($plans as $plan)
+                            <div class="mt-6 grid gap-6 sm:grid-cols-2">
+                                @foreach ($product->gallery as $shot)
                                     @php
-                                        $inCart = $cartLines->contains(fn (array $line): bool => $line['plan']->getKey() === $plan->getKey());
+                                        $shotUrl = is_string($shot) && (str_starts_with($shot, 'http://') || str_starts_with($shot, 'https://') || str_starts_with($shot, '/'))
+                                            ? $shot
+                                            : (is_string($shot) ? Storage::url($shot) : null);
                                     @endphp
 
-                                    <article class="admin-card flex flex-col !p-6 {{ $inCart ? 'ring-1 ring-accent' : '' }}">
-                                        <h3 class="font-display text-xl tracking-wide text-white">{{ $plan->name }}</h3>
-
-                                        <p class="mt-3 font-display text-3xl text-accent">{{ $plan->formattedPrice() }}</p>
-
-                                        <p class="mt-2 text-sm text-muted">
-                                            @if ($plan->isRecurring())
-                                                Billed every {{ \App\Enums\BillingType::intervalLabel($plan->interval_days ?? 30) }}
-                                            @elseif ($plan->isLifetime())
-                                                One-time — lifetime access
-                                            @else
-                                                One-time — {{ $plan->validity_days ?? 365 }} days of access
-                                            @endif
-                                        </p>
-
-                                        @if ($plan->description)
-                                            <p class="mt-4 flex-1 text-sm text-body">{{ $plan->description }}</p>
-                                        @else
-                                            <div class="flex-1"></div>
-                                        @endif
-
-                                        @if ($inCart)
-                                            <a href="{{ route('shop.cart.index') }}" class="btn btn--ghost mt-6 w-full justify-center">
-                                                In cart — view cart
-                                                <span class="btn__strip" aria-hidden="true"></span>
-                                            </a>
-                                        @else
-                                            <form action="{{ route('shop.cart.store') }}" method="POST" class="mt-6">
-                                                @csrf
-                                                <input type="hidden" name="product" value="{{ $product->slug }}">
-                                                <input type="hidden" name="plan" value="{{ $plan->code }}">
-                                                <button type="submit" class="btn btn--accent w-full justify-center">
-                                                    Add to cart
-                                                    <span class="btn__strip" aria-hidden="true"></span>
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </article>
+                                    @if ($shotUrl)
+                                        <a href="{{ $shotUrl }}" target="_blank" rel="noopener noreferrer" class="group overflow-hidden border border-line bg-surface">
+                                            <img
+                                                src="{{ $shotUrl }}"
+                                                alt="{{ $product->name }} screenshot"
+                                                class="aspect-[16/10] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                                                loading="lazy"
+                                            >
+                                        </a>
+                                    @endif
                                 @endforeach
                             </div>
-
-                            @error('plan')
-                                <p class="field__error mt-6">{{ $message }}</p>
-                            @enderror
-                        @else
-                            <p class="text-muted">No plans are available for {{ $product->name }} right now. Please check back soon.</p>
-                        @endif
-                    </section>
+                        </section>
+                    @endif
 
                     {{-- Support & Delivery --}}
                     <section id="support-delivery" class="mt-14 scroll-mt-28 border-t border-line pt-10">
@@ -332,6 +303,10 @@
                                 </li>
                             </ul>
 
+                            @error('plan')
+                                <p class="field__error mt-4">{{ $message }}</p>
+                            @enderror
+
                             <form action="{{ route('shop.cart.store') }}" method="POST" class="mt-6 {{ $defaultInCart ? 'hidden' : '' }}" data-sidebar-cart-form>
                                 @csrf
                                 <input type="hidden" name="product" value="{{ $product->slug }}">
@@ -351,6 +326,11 @@
                                 View cart ({{ $cartLines->count() }})
                                 <span class="btn__strip" aria-hidden="true"></span>
                             </a>
+                        </div>
+                    @else
+                        <div class="admin-card !p-6">
+                            <h2 class="font-display text-sm tracking-[0.2em] text-muted uppercase">Pricing &amp; License</h2>
+                            <p class="mt-4 text-sm text-muted">No plans are available for {{ $product->name }} right now. Please check back soon.</p>
                         </div>
                     @endif
 
