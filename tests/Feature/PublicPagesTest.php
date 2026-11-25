@@ -60,11 +60,20 @@ class PublicPagesTest extends TestCase
 
     public function test_project_detail_page_uses_slug(): void
     {
-        $project = Project::factory()->create(['is_published' => true]);
+        $project = Project::factory()->create([
+            'is_published' => true,
+            'outcomes' => ['Reduced latency by 40%'],
+            'gallery' => ['https://example.com/screen-1.png'],
+        ]);
 
         $this->get(route('portfolio.show', $project))
             ->assertOk()
-            ->assertSee($project->title, false);
+            ->assertSee($project->title, false)
+            ->assertSee('Project Specs', false)
+            ->assertSee('Key Outcomes', false)
+            ->assertSee('Reduced latency by 40%', false)
+            ->assertSee('Project Screenshots', false)
+            ->assertDontSee('Build Something Like This', false);
     }
 
     public function test_only_published_posts_appear_on_the_blog(): void

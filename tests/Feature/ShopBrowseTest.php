@@ -77,9 +77,12 @@ class ShopBrowseTest extends TestCase
             ->assertOk()
             ->assertSee($product->name)
             ->assertSee('Monthly')
+            ->assertSee('Pricing &amp; License', false)
+            ->assertSee('Support &amp; Delivery', false)
             ->assertSee('Add to cart', false)
             ->assertSee('same corner of the marketplace', false)
-            ->assertSee($related->name);
+            ->assertSee($related->name)
+            ->assertDontSee('Need a custom build?', false);
     }
 
     public function test_descendant_ids_cover_the_whole_subtree(): void
